@@ -1,0 +1,230 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum PapelUsuario {
+  ADMIN
+  ENTREVISTADOR
+  VISUALIZADOR
+}
+
+enum TipoEntrevista {
+  CRIANCA
+  GESTANTE
+}
+
+enum StatusEntrevista {
+  COMPLETO
+  PENDENTE
+  REVISAO
+}
+
+enum Zona {
+  URBANA
+  RURAL
+}
+
+enum AcaoLog {
+  CREATE
+  UPDATE
+  DELETE
+  RESTORE
+}
+
+model Usuario {
+  id        String       @id @default(uuid())
+  nome      String
+  email     String       @unique
+  senhaHash String
+  papel     PapelUsuario
+  ativo     Boolean      @default(true)
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+  criadas       Entrevista[] @relation("EntrevistaCriadaPor")
+  atualizadas   Entrevista[] @relation("EntrevistaAtualizadaPor")
+  excluidas     Entrevista[] @relation("EntrevistaExcluidaPor")
+  logs          LogAlteracao[]
+  versoes       EntrevistaVersao[]
+}
+
+model MunicipioMensal {
+  id                 Int    @id @default(autoincrement())
+  ano                Int
+  mes                Int
+  mesNome            String
+  municipio          String
+  regional           String
+  totalBeneficiarios Int
+  criancas           Int
+  gestantes          Int
+  valorTotal         Float
+  rendaMedia         Float
+  @@unique([ano, mes, municipio])
+  @@index([ano, mes])
+  @@index([regional])
+  @@index([municipio])
+}
+
+model BeneficioComposicao {
+  id         Int    @id @default(autoincrement())
+  ano        Int
+  mes        Int
+  label      String
+  quantidade Int
+  @@index([ano, mes])
+}
+
+model Entrevista {
+  id                        String           @id @default(uuid())
+  nome                      String
+  cpf                       String
+  nis                       String?
+  tipo                      TipoEntrevista
+  municipio                 String
+  regional                  String
+  zona                      Zona
+  renda                     Float
+  status                    StatusEntrevista @default(PENDENTE)
+  data                      DateTime         @db.Date
+  ano                       Int
+  mes                       Int
+  satisfacao                Int?
+  nps                       Int?
+  principalUsoBeneficio     String?
+  dificuldadesRelatadas     String[]
+  canalDivulgacao           String?
+  contribSegFinanceira      Int?
+  contribAlimentacao        Int?
+  contribSaude              Int?
+  contribBemEstarEmocional  Int?
+  observacoes               String?
+  versaoAtual               Int              @default(1)
+  createdById               String
+  updatedById               String?
+  deletedAt                 DateTime?
+  deletedById               String?
+  createdAt                 DateTime         @default(now())
+  updatedAt                 DateTime         @updatedAt
+  createdBy   Usuario  @relation("EntrevistaCriadaPor", fields: [createdById], references: [id])
+  updatedBy   Usuario? @relation("EntrevistaAtualizadaPor", fields: [updatedById], references: [id])
+  deletedBy   Usuario? @relation("EntrevistaExcluidaPor", fields: [deletedById], references: [id])
+  detalheCrianca  DetalheCrianca?
+  detalheGestante DetalheGestante?
+  versoes         EntrevistaVersao[]
+  @@index([ano, mes])
+  @@index([regional])
+  @@index([tipo])
+  @@index([status])
+  @@index([deletedAt])
+}
+
+model DetalheCrianca {
+  id                    String  @id @default(uuid())
+  entrevistaId          String  @unique
+  parentesco            String
+  idadeResponsavel      Int
+  racaCor               String
+  orientacaoSexual      String?
+  sexoBiologicoResp     String?
+  identidadeGenero      String?
+  estadoCivil           String
+  escolaridade          String
+  gruposTradicionais    String[]
+  moradia               String?
+  pessoasResidencia     Int?
+  maeSolo               Boolean @default(false)
+  nomeCrianca           String
+  cpfCrianca            String?
+  dataNascimentoCrianca DateTime @db.Date
+  sexoBiologicoCrianca  String
+  idadeCrianca          Int
+  educacaoInfantil      String
+  pesoAoNascer          String
+  aleitamento           String
+  deficienciaSindrome   String  @default("Não")
+  consultasPuericulturaAno Int   @default(0)
+  vacinacaoAntes        String
+  vacinacaoApos         String
+  odontoAntes           String
+  odontoApos            String
+  suplementoFerro       String
+  vitaminaA             String
+  refeicoesAntes        String
+  refeicoesApos         String
+  criancaFelizAntes     String?
+  criancaFelizApos      String?
+  crasAntes             String?
+  crasApos              String?
+  visitasCrasAno        Int     @default(0)
+  entrevista Entrevista @relation(fields: [entrevistaId], references: [id], onDelete: Cascade)
+}
+
+model DetalheGestante {
+  id                     String  @id @default(uuid())
+  entrevistaId           String  @unique
+  idade                  Int
+  racaCor                String
+  orientacaoSexual       String?
+  sexoBiologico          String?
+  identidadeGenero       String?
+  estadoCivil            String
+  escolaridade           String
+  gruposTradicionais     String[]
+  moradia                String?
+  pessoasResidencia      Int?
+  maeSolo                Boolean @default(false)
+  gestacao               String
+  partos                 String?
+  planejadaAnterior      String?
+  planejadaAtual         String?
+  inicioPreNatalAnterior String?
+  inicioPreNatalAtual    String
+  riscoGestacional       String
+  vacinacao              String
+  exameHemograma         Boolean @default(false)
+  exameGlicemia          Boolean @default(false)
+  exameHivSifilis        Boolean @default(false)
+  exameUltrassom         Boolean @default(false)
+  exameUrina             Boolean @default(false)
+  refeicoesAntes         String
+  refeicoesApos          String
+  criancaFelizAntes      String?
+  criancaFelizApos       String?
+  crasAntes              String?
+  crasApos               String?
+  visitasCrasAno         Int     @default(0)
+  entrevista Entrevista @relation(fields: [entrevistaId], references: [id], onDelete: Cascade)
+}
+
+model LogAlteracao {
+  id          String   @id @default(uuid())
+  entidade    String
+  entidadeId  String
+  acao        AcaoLog
+  usuarioId   String
+  dadosAntes  Json?
+  dadosDepois Json?
+  ip          String?
+  createdAt   DateTime @default(now())
+  usuario Usuario @relation(fields: [usuarioId], references: [id])
+  @@index([entidade, entidadeId])
+  @@index([usuarioId])
+  @@index([createdAt])
+}
+
+model EntrevistaVersao {
+  id           String   @id @default(uuid())
+  entrevistaId String
+  versao       Int
+  snapshot     Json
+  usuarioId    String
+  createdAt    DateTime @default(now())
+  entrevista Entrevista @relation(fields: [entrevistaId], references: [id], onDelete: Cascade)
+  usuario    Usuario    @relation(fields: [usuarioId], references: [id])
+  @@unique([entrevistaId, versao])
+}
