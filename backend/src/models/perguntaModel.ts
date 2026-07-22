@@ -2,6 +2,14 @@ import { prisma } from "../config/prisma.js";
 import type { SecaoInput, PerguntaInput } from "../helper/validators.js";
 
 export const perguntaModel = {
+  obterSecaoPorId(id: string) {
+    return prisma.secao.findUnique({ where: { id } });
+  },
+
+  obterPerguntaPorId(id: string) {
+    return prisma.pergunta.findUnique({ where: { id }, include: { opcoes: true } });
+  },
+
   criarSecao(pesquisaId: string, dados: SecaoInput) {
     return prisma.secao.create({
       data: { pesquisaId, titulo: dados.titulo, descricao: dados.descricao, ordem: dados.ordem },
