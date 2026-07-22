@@ -10,7 +10,7 @@ let usuarioId: string;
 
 beforeAll(async () => {
   const u = await prisma.usuario.create({
-    data: { nome: "Login Teste", email, senhaHash: await hashSenha("senha123"), papel: "ENTREVISTADOR" },
+    data: { nome: "Login Teste", email, senhaHash: await hashSenha("senha123"), papel: "COLETADOR" },
   });
   usuarioId = u.id;
 });
@@ -24,7 +24,7 @@ describe("auth", () => {
     const res = await request(app).post("/api/auth/login").send({ email, senha: "senha123" });
     expect(res.status).toBe(200);
     expect(res.body.token).toBeTypeOf("string");
-    expect(res.body.usuario.papel).toBe("ENTREVISTADOR");
+    expect(res.body.usuario.papel).toBe("COLETADOR");
   });
   it("rejeita senha errada com 401", async () => {
     const res = await request(app).post("/api/auth/login").send({ email, senha: "errada" });

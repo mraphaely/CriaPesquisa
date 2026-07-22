@@ -9,24 +9,25 @@ datasource db {
 
 enum PapelUsuario {
   ADMIN
-  ENTREVISTADOR
+  GESTOR
+  COLETADOR
   VISUALIZADOR
 }
 
-enum TipoEntrevista {
-  CRIANCA
-  GESTANTE
+enum StatusPesquisa {
+  RASCUNHO
+  PUBLICADA
+  ENCERRADA
+  ARQUIVADA
 }
 
-enum StatusEntrevista {
-  COMPLETO
-  PENDENTE
-  REVISAO
-}
-
-enum Zona {
-  URBANA
-  RURAL
+enum TipoPergunta {
+  TEXTO
+  NUMERO
+  DATA
+  MULTIPLA_ESCOLHA
+  ESCOLHA_UNICA
+  CAMPO_ABERTO
 }
 
 enum AcaoLog {
@@ -34,6 +35,9 @@ enum AcaoLog {
   UPDATE
   DELETE
   RESTORE
+  PUBLICAR
+  ENCERRAR
+  ARQUIVAR
 }
 
 model Usuario {
@@ -45,11 +49,12 @@ model Usuario {
   ativo     Boolean      @default(true)
   createdAt DateTime     @default(now())
   updatedAt DateTime     @updatedAt
-  criadas       Entrevista[] @relation("EntrevistaCriadaPor")
-  atualizadas   Entrevista[] @relation("EntrevistaAtualizadaPor")
-  excluidas     Entrevista[] @relation("EntrevistaExcluidaPor")
-  logs          LogAlteracao[]
-  versoes       EntrevistaVersao[]
+
+  pesquisasResponsavel Pesquisa[]        @relation("PesquisaResponsavel")
+  pesquisasCriadas     Pesquisa[]        @relation("PesquisaCriadaPor")
+  respostasColetadas   Resposta[]        @relation("RespostaColetadaPor")
+  logs                 LogAlteracao[]
+  versoes              PesquisaVersao[]
 }
 
 model MunicipioMensal {
@@ -64,6 +69,7 @@ model MunicipioMensal {
   gestantes          Int
   valorTotal         Float
   rendaMedia         Float
+
   @@unique([ano, mes, municipio])
   @@index([ano, mes])
   @@index([regional])
@@ -76,129 +82,120 @@ model BeneficioComposicao {
   mes        Int
   label      String
   quantidade Int
+
   @@index([ano, mes])
 }
 
-model Entrevista {
-  id                        String           @id @default(uuid())
-  nome                      String
-  cpf                       String
-  nis                       String?
-  tipo                      TipoEntrevista
-  municipio                 String
-  regional                  String
-  zona                      Zona
-  renda                     Float
-  status                    StatusEntrevista @default(PENDENTE)
-  data                      DateTime         @db.Date
-  ano                       Int
-  mes                       Int
-  satisfacao                Int?
-  nps                       Int?
-  principalUsoBeneficio     String?
-  dificuldadesRelatadas     String[]
-  canalDivulgacao           String?
-  contribSegFinanceira      Int?
-  contribAlimentacao        Int?
-  contribSaude              Int?
-  contribBemEstarEmocional  Int?
-  observacoes               String?
-  versaoAtual               Int              @default(1)
-  createdById               String
-  updatedById               String?
-  deletedAt                 DateTime?
-  deletedById               String?
-  createdAt                 DateTime         @default(now())
-  updatedAt                 DateTime         @updatedAt
-  createdBy   Usuario  @relation("EntrevistaCriadaPor", fields: [createdById], references: [id])
-  updatedBy   Usuario? @relation("EntrevistaAtualizadaPor", fields: [updatedById], references: [id])
-  deletedBy   Usuario? @relation("EntrevistaExcluidaPor", fields: [deletedById], references: [id])
-  detalheCrianca  DetalheCrianca?
-  detalheGestante DetalheGestante?
-  versoes         EntrevistaVersao[]
-  @@index([ano, mes])
-  @@index([regional])
-  @@index([tipo])
+model Pesquisa {
+  id            String         @id @default(uuid())
+  titulo        String
+  descricao     String?
+  responsavelId String
+  status        StatusPesquisa @default(RASCUNHO)
+  periodoInicio DateTime?      @db.Date
+  periodoFim    DateTime?      @db.Date
+  publicadaEm   DateTime?
+  encerradaEm   DateTime?
+  versaoAtual   Int            @default(1)
+  createdById   String
+  updatedById   String?
+  deletedAt     DateTime?
+  deletedById   String?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  responsavel Usuario          @relation("PesquisaResponsavel", fields: [responsavelId], references: [id])
+  createdBy   Usuario          @relation("PesquisaCriadaPor", fields: [createdById], references: [id])
+  secoes      Secao[]
+  perguntas   Pergunta[]
+  respostas   Resposta[]
+  versoes     PesquisaVersao[]
+
   @@index([status])
+  @@index([responsavelId])
   @@index([deletedAt])
 }
 
-model DetalheCrianca {
-  id                    String  @id @default(uuid())
-  entrevistaId          String  @unique
-  parentesco            String
-  idadeResponsavel      Int
-  racaCor               String
-  orientacaoSexual      String?
-  sexoBiologicoResp     String?
-  identidadeGenero      String?
-  estadoCivil           String
-  escolaridade          String
-  gruposTradicionais    String[]
-  moradia               String?
-  pessoasResidencia     Int?
-  maeSolo               Boolean @default(false)
-  nomeCrianca           String
-  cpfCrianca            String?
-  dataNascimentoCrianca DateTime @db.Date
-  sexoBiologicoCrianca  String
-  idadeCrianca          Int
-  educacaoInfantil      String
-  pesoAoNascer          String
-  aleitamento           String
-  deficienciaSindrome   String  @default("Não")
-  consultasPuericulturaAno Int   @default(0)
-  vacinacaoAntes        String
-  vacinacaoApos         String
-  odontoAntes           String
-  odontoApos            String
-  suplementoFerro       String
-  vitaminaA             String
-  refeicoesAntes        String
-  refeicoesApos         String
-  criancaFelizAntes     String?
-  criancaFelizApos      String?
-  crasAntes             String?
-  crasApos              String?
-  visitasCrasAno        Int     @default(0)
-  entrevista Entrevista @relation(fields: [entrevistaId], references: [id], onDelete: Cascade)
+model Secao {
+  id         String  @id @default(uuid())
+  pesquisaId String
+  titulo     String
+  descricao  String?
+  ordem      Int
+
+  pesquisa  Pesquisa   @relation(fields: [pesquisaId], references: [id], onDelete: Cascade)
+  perguntas Pergunta[]
+
+  @@index([pesquisaId, ordem])
 }
 
-model DetalheGestante {
-  id                     String  @id @default(uuid())
-  entrevistaId           String  @unique
-  idade                  Int
-  racaCor                String
-  orientacaoSexual       String?
-  sexoBiologico          String?
-  identidadeGenero       String?
-  estadoCivil            String
-  escolaridade           String
-  gruposTradicionais     String[]
-  moradia                String?
-  pessoasResidencia      Int?
-  maeSolo                Boolean @default(false)
-  gestacao               String
-  partos                 String?
-  planejadaAnterior      String?
-  planejadaAtual         String?
-  inicioPreNatalAnterior String?
-  inicioPreNatalAtual    String
-  riscoGestacional       String
-  vacinacao              String
-  exameHemograma         Boolean @default(false)
-  exameGlicemia          Boolean @default(false)
-  exameHivSifilis        Boolean @default(false)
-  exameUltrassom         Boolean @default(false)
-  exameUrina             Boolean @default(false)
-  refeicoesAntes         String
-  refeicoesApos          String
-  criancaFelizAntes      String?
-  criancaFelizApos       String?
-  crasAntes              String?
-  crasApos               String?
-  visitasCrasAno         Int     @default(0)
-  entrevista Entrevista @relation(fields: [entrevistaId], references: [id], onDelete: Cascade)
+model Pergunta {
+  id          String       @id @default(uuid())
+  pesquisaId  String
+  secaoId     String?
+  enunciado   String
+  tipo        TipoPergunta
+  obrigatoria Boolean      @default(false)
+  ordem       Int
+  ajuda       String?
+
+  pesquisa Pesquisa        @relation(fields: [pesquisaId], references: [id], onDelete: Cascade)
+  secao    Secao?          @relation(fields: [secaoId], references: [id])
+  opcoes   OpcaoPergunta[]
+  itens    ItemResposta[]
+
+  @@index([pesquisaId, ordem])
+}
+
+model OpcaoPergunta {
+  id         String @id @default(uuid())
+  perguntaId String
+  texto      String
+  ordem      Int
+
+  pergunta Pergunta @relation(fields: [perguntaId], references: [id], onDelete: Cascade)
+
+  @@index([perguntaId, ordem])
+}
+
+model Resposta {
+  id          String    @id @default(uuid())
+  pesquisaId  String
+  coletadorId String
+  municipio   String?
+  unidade     String?
+  regional    String?
+  enviadaEm   DateTime  @default(now())
+  ip          String?
+  deletedAt   DateTime?
+  deletedById String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  pesquisa  Pesquisa       @relation(fields: [pesquisaId], references: [id])
+  coletador Usuario        @relation("RespostaColetadaPor", fields: [coletadorId], references: [id])
+  itens     ItemResposta[]
+
+  @@index([pesquisaId])
+  @@index([municipio])
+  @@index([enviadaEm])
+  @@index([deletedAt])
+}
+
+model ItemResposta {
+  id                 String    @id @default(uuid())
+  respostaId         String
+  perguntaId         String
+  valorTexto         String?
+  valorNumero        Float?
+  valorData          DateTime? @db.Date
+  opcoesSelecionadas String[]
+
+  resposta Resposta @relation(fields: [respostaId], references: [id], onDelete: Cascade)
+  pergunta Pergunta @relation(fields: [perguntaId], references: [id])
+
+  @@index([respostaId])
+  @@index([perguntaId])
 }
 
 model LogAlteracao {
@@ -211,20 +208,24 @@ model LogAlteracao {
   dadosDepois Json?
   ip          String?
   createdAt   DateTime @default(now())
+
   usuario Usuario @relation(fields: [usuarioId], references: [id])
+
   @@index([entidade, entidadeId])
   @@index([usuarioId])
   @@index([createdAt])
 }
 
-model EntrevistaVersao {
+model PesquisaVersao {
   id           String   @id @default(uuid())
-  entrevistaId String
+  pesquisaId   String
   versao       Int
   snapshot     Json
   usuarioId    String
   createdAt    DateTime @default(now())
-  entrevista Entrevista @relation(fields: [entrevistaId], references: [id], onDelete: Cascade)
-  usuario    Usuario    @relation(fields: [usuarioId], references: [id])
-  @@unique([entrevistaId, versao])
+
+  pesquisa Pesquisa @relation(fields: [pesquisaId], references: [id], onDelete: Cascade)
+  usuario  Usuario  @relation(fields: [usuarioId], references: [id])
+
+  @@unique([pesquisaId, versao])
 }
