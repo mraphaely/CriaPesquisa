@@ -1,0 +1,14 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: criapesquisa_pg
+    environment:
+      POSTGRES_DB: criapesquisa
+      POSTGRES_USER: cria_user
+      POSTGRES_PASSWORD: cria_senha
+    ports:
+      - "5432:5432"
+    volumes:
+      - criapesquisa_pgdata:/var/lib/postgresql/data
+volumes:
+  criapesquisa_pgdata:

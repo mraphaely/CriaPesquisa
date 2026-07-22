@@ -1,0 +1,443 @@
+[
+  {
+    "municipio": "Maceió",
+    "total_beneficiarios": 22390,
+    "valor_total": 3359550,
+    "renda_media": 51.3,
+    "criancas": 21924,
+    "gestantes": 459,
+    "pct_total": 23.12
+  },
+  {
+    "municipio": "Arapiraca",
+    "total_beneficiarios": 6223,
+    "valor_total": 935700,
+    "renda_media": 32.47,
+    "criancas": 5977,
+    "gestantes": 231,
+    "pct_total": 6.43
+  },
+  {
+    "municipio": "Palmeira dos Índios",
+    "total_beneficiarios": 3424,
+    "valor_total": 515850,
+    "renda_media": 41.81,
+    "criancas": 3223,
+    "gestantes": 186,
+    "pct_total": 3.54
+  },
+  {
+    "municipio": "Rio Largo",
+    "total_beneficiarios": 3053,
+    "valor_total": 458250,
+    "renda_media": 53.51,
+    "criancas": 2929,
+    "gestantes": 122,
+    "pct_total": 3.15
+  },
+  {
+    "municipio": "União dos Palmares",
+    "total_beneficiarios": 2448,
+    "valor_total": 368250,
+    "renda_media": 123.92,
+    "criancas": 2291,
+    "gestantes": 150,
+    "pct_total": 2.53
+  },
+  {
+    "municipio": "Penedo",
+    "total_beneficiarios": 2398,
+    "valor_total": 360300,
+    "renda_media": 26.0,
+    "criancas": 2262,
+    "gestantes": 132,
+    "pct_total": 2.48
+  },
+  {
+    "municipio": "Santana do Ipanema",
+    "total_beneficiarios": 2383,
+    "valor_total": 358650,
+    "renda_media": 55.12,
+    "criancas": 2227,
+    "gestantes": 148,
+    "pct_total": 2.46
+  },
+  {
+    "municipio": "Coruripe",
+    "total_beneficiarios": 2350,
+    "valor_total": 353100,
+    "renda_media": 57.04,
+    "criancas": 2227,
+    "gestantes": 119,
+    "pct_total": 2.43
+  },
+  {
+    "municipio": "Piranhas",
+    "total_beneficiarios": 2213,
+    "valor_total": 333450,
+    "renda_media": 38.98,
+    "criancas": 2012,
+    "gestantes": 191,
+    "pct_total": 2.29
+  },
+  {
+    "municipio": "Marechal Deodoro",
+    "total_beneficiarios": 2187,
+    "valor_total": 328650,
+    "renda_media": 32.29,
+    "criancas": 2115,
+    "gestantes": 68,
+    "pct_total": 2.26
+  },
+  {
+    "municipio": "Delmiro Gouveia",
+    "total_beneficiarios": 1992,
+    "valor_total": 300300,
+    "renda_media": 57.69,
+    "criancas": 1867,
+    "gestantes": 115,
+    "pct_total": 2.06
+  },
+  {
+    "municipio": "São Miguel dos Campos",
+    "total_beneficiarios": 1944,
+    "valor_total": 292650,
+    "renda_media": 89.69,
+    "criancas": 1822,
+    "gestantes": 115,
+    "pct_total": 2.01
+  },
+  {
+    "municipio": "Girau do Ponciano",
+    "total_beneficiarios": 1944,
+    "valor_total": 292200,
+    "renda_media": 17.57,
+    "criancas": 1820,
+    "gestantes": 120,
+    "pct_total": 2.01
+  },
+  {
+    "municipio": "São José da Tapera",
+    "total_beneficiarios": 1835,
+    "valor_total": 276300,
+    "renda_media": 56.04,
+    "criancas": 1706,
+    "gestantes": 122,
+    "pct_total": 1.89
+  },
+  {
+    "municipio": "Maragogi",
+    "total_beneficiarios": 1709,
+    "valor_total": 256500,
+    "renda_media": 58.5,
+    "criancas": 1661,
+    "gestantes": 47,
+    "pct_total": 1.76
+  },
+  {
+    "municipio": "Pilar",
+    "total_beneficiarios": 1689,
+    "valor_total": 254400,
+    "renda_media": 24.26,
+    "criancas": 1585,
+    "gestantes": 97,
+    "pct_total": 1.74
+  },
+  {
+    "municipio": "São Luís do Quitunde",
+    "total_beneficiarios": 1646,
+    "valor_total": 247350,
+    "renda_media": 69.66,
+    "criancas": 1563,
+    "gestantes": 80,
+    "pct_total": 1.7
+  },
+  {
+    "municipio": "Atalaia",
+    "total_beneficiarios": 1580,
+    "valor_total": 237300,
+    "renda_media": 78.88,
+    "criancas": 1512,
+    "gestantes": 66,
+    "pct_total": 1.63
+  },
+  {
+    "municipio": "Craíbas",
+    "total_beneficiarios": 1436,
+    "valor_total": 215850,
+    "renda_media": 26.21,
+    "criancas": 1338,
+    "gestantes": 95,
+    "pct_total": 1.48
+  },
+  {
+    "municipio": "Limoeiro de Anadia",
+    "total_beneficiarios": 1431,
+    "valor_total": 215250,
+    "renda_media": 22.04,
+    "criancas": 1328,
+    "gestantes": 99,
+    "pct_total": 1.48
+  },
+  {
+    "municipio": "São Sebastião",
+    "total_beneficiarios": 1388,
+    "valor_total": 208800,
+    "renda_media": 37.85,
+    "criancas": 1291,
+    "gestantes": 93,
+    "pct_total": 1.43
+  },
+  {
+    "municipio": "Porto Calvo",
+    "total_beneficiarios": 1327,
+    "valor_total": 199050,
+    "renda_media": 70.42,
+    "criancas": 1253,
+    "gestantes": 74,
+    "pct_total": 1.37
+  },
+  {
+    "municipio": "Feira Grande",
+    "total_beneficiarios": 1279,
+    "valor_total": 192900,
+    "renda_media": 33.69,
+    "criancas": 1171,
+    "gestantes": 101,
+    "pct_total": 1.32
+  },
+  {
+    "municipio": "Teotônio Vilela",
+    "total_beneficiarios": 1256,
+    "valor_total": 189000,
+    "renda_media": 55.68,
+    "criancas": 1196,
+    "gestantes": 56,
+    "pct_total": 1.3
+  },
+  {
+    "municipio": "Murici",
+    "total_beneficiarios": 1255,
+    "valor_total": 188550,
+    "renda_media": 59.18,
+    "criancas": 1220,
+    "gestantes": 33,
+    "pct_total": 1.3
+  },
+  {
+    "municipio": "Joaquim Gomes",
+    "total_beneficiarios": 1251,
+    "valor_total": 187800,
+    "renda_media": 69.84,
+    "criancas": 1179,
+    "gestantes": 71,
+    "pct_total": 1.29
+  },
+  {
+    "municipio": "Traipu",
+    "total_beneficiarios": 1231,
+    "valor_total": 185400,
+    "renda_media": 18.81,
+    "criancas": 1127,
+    "gestantes": 99,
+    "pct_total": 1.27
+  },
+  {
+    "municipio": "Matriz de Camaragibe",
+    "total_beneficiarios": 1162,
+    "valor_total": 174300,
+    "renda_media": 55.27,
+    "criancas": 1108,
+    "gestantes": 54,
+    "pct_total": 1.2
+  },
+  {
+    "municipio": "Boca da Mata",
+    "total_beneficiarios": 1149,
+    "valor_total": 172800,
+    "renda_media": 16.19,
+    "criancas": 1056,
+    "gestantes": 90,
+    "pct_total": 1.19
+  },
+  {
+    "municipio": "Pão de Açúcar",
+    "total_beneficiarios": 1116,
+    "valor_total": 167700,
+    "renda_media": 84.01,
+    "criancas": 1023,
+    "gestantes": 91,
+    "pct_total": 1.15
+  },
+  {
+    "municipio": "Porto Real do Colégio",
+    "total_beneficiarios": 1107,
+    "valor_total": 166200,
+    "renda_media": 32.03,
+    "criancas": 1002,
+    "gestantes": 104,
+    "pct_total": 1.14
+  },
+  {
+    "municipio": "Igaci",
+    "total_beneficiarios": 1076,
+    "valor_total": 161850,
+    "renda_media": 35.53,
+    "criancas": 996,
+    "gestantes": 77,
+    "pct_total": 1.11
+  },
+  {
+    "municipio": "Cajueiro",
+    "total_beneficiarios": 1070,
+    "valor_total": 160800,
+    "renda_media": 56.63,
+    "criancas": 997,
+    "gestantes": 71,
+    "pct_total": 1.1
+  },
+  {
+    "municipio": "Batalha",
+    "total_beneficiarios": 1070,
+    "valor_total": 161400,
+    "renda_media": 38.6,
+    "criancas": 994,
+    "gestantes": 70,
+    "pct_total": 1.1
+  },
+  {
+    "municipio": "Inhapi",
+    "total_beneficiarios": 1049,
+    "valor_total": 158100,
+    "renda_media": 42.22,
+    "criancas": 958,
+    "gestantes": 86,
+    "pct_total": 1.08
+  },
+  {
+    "municipio": "Piaçabuçu",
+    "total_beneficiarios": 1047,
+    "valor_total": 157800,
+    "renda_media": 23.89,
+    "criancas": 948,
+    "gestantes": 94,
+    "pct_total": 1.08
+  },
+  {
+    "municipio": "Campo Alegre",
+    "total_beneficiarios": 1034,
+    "valor_total": 155250,
+    "renda_media": 46.02,
+    "criancas": 1000,
+    "gestantes": 33,
+    "pct_total": 1.07
+  },
+  {
+    "municipio": "Barra de Santo Antônio",
+    "total_beneficiarios": 1021,
+    "valor_total": 153450,
+    "renda_media": 41.88,
+    "criancas": 968,
+    "gestantes": 51,
+    "pct_total": 1.05
+  },
+  {
+    "municipio": "Viçosa",
+    "total_beneficiarios": 1019,
+    "valor_total": 152850,
+    "renda_media": 41.77,
+    "criancas": 963,
+    "gestantes": 56,
+    "pct_total": 1.05
+  },
+  {
+    "municipio": "Mata Grande",
+    "total_beneficiarios": 1010,
+    "valor_total": 151650,
+    "renda_media": 59.39,
+    "criancas": 941,
+    "gestantes": 68,
+    "pct_total": 1.04
+  },
+  {
+    "municipio": "Junqueiro",
+    "total_beneficiarios": 996,
+    "valor_total": 149550,
+    "renda_media": 74.56,
+    "criancas": 945,
+    "gestantes": 50,
+    "pct_total": 1.03
+  },
+  {
+    "municipio": "Taquarana",
+    "total_beneficiarios": 976,
+    "valor_total": 146700,
+    "renda_media": 47.38,
+    "criancas": 906,
+    "gestantes": 68,
+    "pct_total": 1.01
+  },
+  {
+    "municipio": "São José da Laje",
+    "total_beneficiarios": 934,
+    "valor_total": 140550,
+    "renda_media": 76.43,
+    "criancas": 901,
+    "gestantes": 30,
+    "pct_total": 0.96
+  },
+  {
+    "municipio": "Canapi",
+    "total_beneficiarios": 906,
+    "valor_total": 136800,
+    "renda_media": 27.86,
+    "criancas": 828,
+    "gestantes": 72,
+    "pct_total": 0.94
+  },
+  {
+    "municipio": "Senador Rui Palmeira",
+    "total_beneficiarios": 855,
+    "valor_total": 129300,
+    "renda_media": 26.55,
+    "criancas": 776,
+    "gestantes": 72,
+    "pct_total": 0.88
+  },
+  {
+    "municipio": "Água Branca",
+    "total_beneficiarios": 802,
+    "valor_total": 120450,
+    "renda_media": 30.74,
+    "criancas": 763,
+    "gestantes": 38,
+    "pct_total": 0.83
+  },
+  {
+    "municipio": "Ouro Branco",
+    "total_beneficiarios": 789,
+    "valor_total": 118800,
+    "renda_media": 62.32,
+    "criancas": 711,
+    "gestantes": 75,
+    "pct_total": 0.81
+  },
+  {
+    "municipio": "Anadia",
+    "total_beneficiarios": 700,
+    "valor_total": 105600,
+    "renda_media": 19.94,
+    "criancas": 640,
+    "gestantes": 56,
+    "pct_total": 0.72
+  },
+  {
+    "municipio": "Flexeiras",
+    "total_beneficiarios": 694,
+    "valor_total": 104250,
+    "renda_media": 46.77,
+    "criancas": 653,
+    "gestantes": 40,
+    "pct_total": 0.72
+  }
+]
