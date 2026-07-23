@@ -101,3 +101,29 @@ export const atualizarUsuarioSchema = z.object({
   senha: z.string().min(6).optional(),
 });
 export type AtualizarUsuarioInput = z.infer<typeof atualizarUsuarioSchema>;
+
+// ---------- Atualização parcial de Pergunta ----------
+// `perguntaSchema` usa `.refine()`, que impede `.partial()`. Este schema aceita
+// campos parciais e só valida a regra de opções quando `tipo` E `opcoes` vierem.
+export const atualizarPerguntaSchema = z
+  .object({
+    enunciado: z.string().min(1).optional(),
+    tipo: z.enum(["TEXTO", "NUMERO", "DATA", "MULTIPLA_ESCOLHA", "ESCOLHA_UNICA", "CAMPO_ABERTO"]).optional(),
+    obrigatoria: z.boolean().optional(),
+    ordem: z.number().int().min(0).optional(),
+    secaoId: z.string().uuid().optional(),
+    ajuda: z.string().optional(),
+    opcoes: z.array(opcaoSchema).optional(),
+  })
+  .superRefine((dados, ctx) => {
+    if (dados.tipo === undefined || dados.opcoes === undefined) return;
+    const exigeOpcoes = dados.tipo === "MULTIPLA_ESCOLHA" || dados.tipo === "ESCOLHA_UNICA";
+    const quantidade = dados.opcoes.length;
+    if (exigeOpcoes && quantidade < 2) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["opcoes"], message: "Exige ao menos 2 opções." });
+    }
+    if (!exigeOpcoes && quantidade > 0) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["opcoes"], message: "Este tipo não deve ter opções." });
+    }
+  });
+export type AtualizarPerguntaInput = z.infer<typeof atualizarPerguntaSchema>;

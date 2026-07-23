@@ -2,7 +2,7 @@ import { Router } from "express";
 import { autenticar } from "../middleware/auth.js";
 import { exigirPapel } from "../middleware/roles.js";
 import { validar } from "../middleware/validate.js";
-import { criarPesquisaSchema, atualizarPesquisaSchema, secaoSchema, perguntaSchema, reordenarSchema } from "../helper/validators.js";
+import { criarPesquisaSchema, atualizarPesquisaSchema, secaoSchema, perguntaSchema, atualizarPerguntaSchema, reordenarSchema } from "../helper/validators.js";
 import {
   listar,
   obter,
@@ -50,7 +50,7 @@ pesquisaRoutes.delete("/secoes/:id", autenticar, exigirPapel(...GESTOR_ADMIN), d
 
 // ---------- Perguntas + opções ----------
 pesquisaRoutes.post("/pesquisas/:id/perguntas", autenticar, exigirPapel(...GESTOR_ADMIN), validar(perguntaSchema), criarPergunta);
-pesquisaRoutes.put("/perguntas/:id", autenticar, exigirPapel(...GESTOR_ADMIN), atualizarPergunta);
+pesquisaRoutes.put("/perguntas/:id", autenticar, exigirPapel(...GESTOR_ADMIN), validar(atualizarPerguntaSchema), atualizarPergunta);
 pesquisaRoutes.delete("/perguntas/:id", autenticar, exigirPapel(...GESTOR_ADMIN), deletarPergunta);
 pesquisaRoutes.post(
   "/pesquisas/:id/perguntas/reordenar",
