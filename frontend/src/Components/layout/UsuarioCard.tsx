@@ -12,13 +12,13 @@ const Btn = styled.button`
   border: none;
   border-radius: 12px;
   cursor: pointer;
-  background: ${(p) => p.theme.cores.danger}22;
+  background: transparent;
   color: ${(p) => p.theme.cores.danger};
   font-size: 13px;
   font-weight: 700;
   white-space: nowrap;
-  transition: background 0.15s ease, filter 0.15s ease;
-  &:hover { background: ${(p) => p.theme.cores.danger}33; filter: brightness(1.05); }
+  transition: background 0.15s ease;
+  &:hover { background: ${(p) => p.theme.cores.danger}22; }
 
   @media (max-width: 860px) {
     width: auto;
