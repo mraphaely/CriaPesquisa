@@ -5,6 +5,7 @@ import type { ChartOptions } from "chart.js";
 import { Plus, Users, Baby, HeartPulse, MapPin, Wallet } from "lucide-react";
 import "../../Components/charts/setup.js";
 import { ChartCard } from "../../Components/charts/ChartCard.js";
+import { MapaAlagoas } from "../../Components/mapa/MapaAlagoas.js";
 import {
   PageHeader,
   PageTitle,
@@ -23,6 +24,7 @@ import {
   Th,
   Td,
   Tag,
+  Muted,
 } from "../../Styles/ui.js";
 import { MUNICIPIOS, TOTAIS, RACA, ZONA, FAIXA_ETARIA, INVESTIMENTO, PALETA } from "../data/cria.js";
 
@@ -31,6 +33,32 @@ const Grade = styled.div`
   gap: 16px;
   margin-bottom: 16px;
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+`;
+
+const GradeMapa = styled.div`
+  display: grid;
+  gap: 16px;
+  margin-bottom: 16px;
+  grid-template-columns: 1.6fr 1fr;
+  @media (max-width: 900px) {
+    grid-template-columns: 1fr;
+  }
+`;
+
+const Legenda = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  font-size: 11px;
+  color: ${(p) => p.theme.cores.textMuted};
+`;
+
+const Escala = styled.div`
+  flex: 1;
+  height: 8px;
+  border-radius: 5px;
+  background: linear-gradient(90deg, #d9ecff, #78bbff, #3a8ef0, #1756b8, #0b2d6e);
 `;
 
 function fmtMil(n: number): string {
@@ -87,6 +115,42 @@ export function Dashboard() {
         <KpiCard><KpiIcon><Wallet size={20} /></KpiIcon><KpiValue>R${(TOTAIS.investimentoMensal / 1e6).toFixed(1).replace(".", ",")}Mi</KpiValue><KpiLabel>Investimento/mês</KpiLabel></KpiCard>
       </KpiRow>
 
+      <GradeMapa>
+        <Card>
+          <SectionTitle>Beneficiários por município</SectionTitle>
+          <MapaAlagoas />
+          <Legenda>
+            <span>Menos</span>
+            <Escala />
+            <span>Mais</span>
+          </Legenda>
+        </Card>
+        <Card>
+          <SectionTitle>Top municípios</SectionTitle>
+          <TableWrap>
+            <Tabela>
+              <thead>
+                <tr>
+                  <Th>#</Th>
+                  <Th>Município</Th>
+                  <Th>Benef.</Th>
+                </tr>
+              </thead>
+              <tbody>
+                {MUNICIPIOS.slice(0, 10).map((m, i) => (
+                  <tr key={m.municipio}>
+                    <Td><Tag $tone="muted">{i + 1}</Tag></Td>
+                    <Td style={{ fontWeight: 600 }}>{m.municipio}</Td>
+                    <Td>{m.total.toLocaleString("pt-BR")}</Td>
+                  </tr>
+                ))}
+              </tbody>
+            </Tabela>
+          </TableWrap>
+          <Muted style={{ marginTop: 12, fontSize: 12 }}>Passe o mouse no mapa para ver cada município.</Muted>
+        </Card>
+      </GradeMapa>
+
       <Grade>
         <ChartCard titulo="Distribuição racial">
           <Doughnut
@@ -108,42 +172,12 @@ export function Dashboard() {
         </ChartCard>
       </Grade>
 
-      <div style={{ marginBottom: 16 }}>
-        <ChartCard titulo="Evolução do investimento (R$ milhões/mês)" altura={220}>
-          <Line
-            data={{ labels: INVESTIMENTO.labels, datasets: [{ label: "Investimento", data: INVESTIMENTO.data, borderColor: t.cores.primary, backgroundColor: t.cores.accentSoft, fill: true, tension: 0.4, pointRadius: 2 }] }}
-            options={optLine}
-          />
-        </ChartCard>
-      </div>
-
-      <Card>
-        <SectionTitle>Top municípios por beneficiários</SectionTitle>
-        <TableWrap>
-          <Tabela>
-            <thead>
-              <tr>
-                <Th>#</Th>
-                <Th>Município</Th>
-                <Th>Beneficiários</Th>
-                <Th>Crianças</Th>
-                <Th>Gestantes</Th>
-              </tr>
-            </thead>
-            <tbody>
-              {MUNICIPIOS.slice(0, 10).map((m, i) => (
-                <tr key={m.municipio}>
-                  <Td><Tag $tone="muted">{i + 1}</Tag></Td>
-                  <Td style={{ fontWeight: 600 }}>{m.municipio}</Td>
-                  <Td>{m.total.toLocaleString("pt-BR")}</Td>
-                  <Td>{m.criancas.toLocaleString("pt-BR")}</Td>
-                  <Td>{m.gestantes.toLocaleString("pt-BR")}</Td>
-                </tr>
-              ))}
-            </tbody>
-          </Tabela>
-        </TableWrap>
-      </Card>
+      <ChartCard titulo="Evolução do investimento (R$ milhões/mês)" altura={220}>
+        <Line
+          data={{ labels: INVESTIMENTO.labels, datasets: [{ label: "Investimento", data: INVESTIMENTO.data, borderColor: t.cores.primary, backgroundColor: t.cores.accentSoft, fill: true, tension: 0.4, pointRadius: 2 }] }}
+          options={optLine}
+        />
+      </ChartCard>
     </div>
   );
 }
