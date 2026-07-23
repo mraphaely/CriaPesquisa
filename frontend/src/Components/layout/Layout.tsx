@@ -1,3 +1,4 @@
+import { useState } from "react";
 import styled from "styled-components";
 import { Outlet } from "react-router-dom";
 import { Sidebar } from "./Sidebar.js";
@@ -26,11 +27,21 @@ const Conteudo = styled.div`
 `;
 
 export function Layout() {
+  const [colapsada, setColapsada] = useState<boolean>(() => localStorage.getItem("sidebar-colapsada") === "1");
+
+  function alternar() {
+    setColapsada((v) => {
+      const nova = !v;
+      localStorage.setItem("sidebar-colapsada", nova ? "1" : "0");
+      return nova;
+    });
+  }
+
   return (
     <Shell>
-      <Sidebar />
+      <Sidebar colapsada={colapsada} />
       <Main>
-        <Topbar />
+        <Topbar colapsada={colapsada} onToggle={alternar} />
         <Conteudo>
           <Outlet />
         </Conteudo>
