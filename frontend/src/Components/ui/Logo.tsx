@@ -16,10 +16,16 @@ const CONTORNO: Record<Variante, string> = {
   azul: "#C9CDD6",
 };
 
+// Arquivos reais das logos em public/.
+const ARQUIVO: Record<Variante, string> = {
+  branca: "/LogoCria-White.png",
+  colorida: "/LogoCria-Colorido.png",
+  azul: "/LogoCria-Blue.png",
+};
+
 /**
- * Logo do CRIA. Usa `public/cria-<variante>.png` quando existir; senão,
- * cai num wordmark "cria" com contorno (fonte arredondada) parecido com a logo.
- * Arquivos esperados: public/cria-branca.png, cria-colorida.png, cria-azul.png
+ * Logo do CRIA. Usa os PNGs em public/ (LogoCria-White/Colorido/Blue.png);
+ * se algum faltar, cai num wordmark "cria" com contorno como placeholder.
  */
 export function Logo({ variante, altura = 34 }: { variante: Variante; altura?: number }) {
   const [erro, setErro] = useState(false);
@@ -27,7 +33,7 @@ export function Logo({ variante, altura = 34 }: { variante: Variante; altura?: n
   if (!erro) {
     return (
       <img
-        src={`/cria-${variante}.png`}
+        src={ARQUIVO[variante]}
         alt="CRIA"
         onError={() => setErro(true)}
         style={{ height: altura, width: "auto", display: "block" }}
