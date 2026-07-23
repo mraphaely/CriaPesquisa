@@ -34,9 +34,10 @@ const Wrap = styled.div`
   }
 `;
 
-const Trigger = styled.button`
+const Trigger = styled.button<{ $colapsada: boolean }>`
   display: flex;
   align-items: center;
+  justify-content: ${(p) => (p.$colapsada ? "center" : "flex-start")};
   gap: 10px;
   width: 100%;
   background: none;
@@ -66,13 +67,14 @@ const Bolinha = styled.div`
   img { width: 100%; height: 100%; object-fit: cover; }
 `;
 
-const Info = styled.div`
+const Info = styled.div<{ $colapsada: boolean }>`
   display: flex;
   flex-direction: column;
   line-height: 1.2;
   min-width: 0;
   flex: 1;
-  @media (max-width: 640px) { display: none; }
+  ${(p) => (p.$colapsada ? "display:none;" : "")}
+  @media (max-width: 860px) { display: none; }
 `;
 
 const Nome = styled.span`
@@ -88,12 +90,13 @@ const Papel = styled.span`
   color: ${(p) => p.theme.cores.sidebarMuted};
 `;
 
-const Seta = styled(ChevronUp)<{ $aberto: boolean }>`
+const Seta = styled(ChevronUp)<{ $aberto: boolean; $colapsada: boolean }>`
   flex-shrink: 0;
   color: ${(p) => p.theme.cores.sidebarMuted};
   transition: transform 0.15s ease;
   transform: rotate(${(p) => (p.$aberto ? "0deg" : "180deg")});
-  @media (max-width: 640px) { display: none; }
+  ${(p) => (p.$colapsada ? "display:none;" : "")}
+  @media (max-width: 860px) { display: none; }
 `;
 
 const Menu = styled.div`
@@ -143,7 +146,7 @@ const Opcao = styled.button`
   &:hover { background: ${(p) => p.theme.cores.surfaceAlt}; }
 `;
 
-export function UsuarioMenu() {
+export function UsuarioMenu({ colapsada = false }: { colapsada?: boolean }) {
   const { usuario, sair } = useAuth();
   const [aberto, setAberto] = useState(false);
   const [pos, setPos] = useState<Pos | null>(null);
@@ -198,13 +201,14 @@ export function UsuarioMenu() {
         onClick={() => (aberto ? setAberto(false) : abrir())}
         aria-haspopup="menu"
         aria-expanded={aberto}
+        $colapsada={colapsada}
       >
         <Bolinha>{usuario.foto ? <img src={usuario.foto} alt={usuario.nome} /> : iniciais(usuario.nome)}</Bolinha>
-        <Info>
+        <Info $colapsada={colapsada}>
           <Nome>{usuario.nome}</Nome>
           <Papel>{usuario.papel}</Papel>
         </Info>
-        <Seta size={16} $aberto={aberto} />
+        <Seta size={16} $aberto={aberto} $colapsada={colapsada} />
       </Trigger>
 
       {aberto &&

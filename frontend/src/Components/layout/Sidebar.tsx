@@ -1,6 +1,7 @@
+import { useState } from "react";
 import { NavLink } from "react-router-dom";
 import styled from "styled-components";
-import { LayoutDashboard, ClipboardList, Users, ScrollText, type LucideIcon } from "lucide-react";
+import { LayoutDashboard, ClipboardList, Users, ScrollText, PanelLeftClose, PanelLeftOpen, type LucideIcon } from "lucide-react";
 import { Logo } from "../ui/Logo.js";
 import { UsuarioMenu } from "./UsuarioMenu.js";
 
@@ -27,14 +28,15 @@ const NAV: { grupo: string; itens: ItemNav[] }[] = [
   },
 ];
 
-const Aside = styled.nav`
+const Aside = styled.nav<{ $colapsada: boolean }>`
   background: ${(p) => p.theme.cores.sidebar};
   color: ${(p) => p.theme.cores.sidebarText};
-  width: 240px;
+  width: ${(p) => (p.$colapsada ? "84px" : "240px")};
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
-  padding: 22px 14px;
+  padding: 18px 12px;
+  transition: width 0.18s ease;
 
   @media (max-width: 860px) {
     width: 100%;
@@ -42,17 +44,21 @@ const Aside = styled.nav`
     align-items: center;
     gap: 8px;
     padding: 10px 12px;
-    overflow-x: auto;
   }
 `;
 
-const Marca = styled.div`
-  padding: 0 8px 18px;
+const Topo = styled.div<{ $colapsada: boolean }>`
+  display: flex;
+  flex-direction: ${(p) => (p.$colapsada ? "column" : "row")};
+  align-items: center;
+  justify-content: ${(p) => (p.$colapsada ? "center" : "space-between")};
+  gap: 10px;
+  padding: 0 6px 16px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  margin-bottom: 10px;
+  margin-bottom: 8px;
 
   @media (max-width: 860px) {
-    padding: 0 12px 0 4px;
+    padding: 0 10px 0 4px;
     margin-bottom: 0;
     border-bottom: none;
     border-right: 1px solid rgba(255, 255, 255, 0.12);
@@ -60,32 +66,53 @@ const Marca = styled.div`
   }
 `;
 
+const MarcaBox = styled.div`
+  display: flex;
+  align-items: center;
+`;
+
+const BotaoColapsar = styled.button`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  background: transparent;
+  color: ${(p) => p.theme.cores.sidebarMuted};
+  transition: background 0.15s ease, color 0.15s ease;
+  &:hover { background: rgba(255, 255, 255, 0.08); color: #fff; }
+  @media (max-width: 860px) { display: none; }
+`;
+
 const Grupos = styled.div`
   display: flex;
   flex-direction: column;
   flex: 1;
+  min-width: 0;
 
   @media (max-width: 860px) {
     flex-direction: row;
     align-items: center;
+    justify-content: center;
     gap: 6px;
   }
 `;
 
-const Grupo = styled.div`
+const Grupo = styled.div<{ $colapsada: boolean }>`
   font-size: 9px;
   font-weight: 700;
   letter-spacing: 1.6px;
   text-transform: uppercase;
   color: ${(p) => p.theme.cores.sidebarMuted};
   padding: 14px 10px 6px;
-
-  @media (max-width: 860px) {
-    display: none;
-  }
+  ${(p) => (p.$colapsada ? "display:none;" : "")}
+  @media (max-width: 860px) { display: none; }
 `;
 
-const Item = styled(NavLink)`
+const Item = styled(NavLink)<{ $colapsada: boolean }>`
   display: flex;
   align-items: center;
   gap: 11px;
@@ -96,31 +123,59 @@ const Item = styled(NavLink)`
   font-weight: 500;
   margin-bottom: 2px;
   white-space: nowrap;
+  justify-content: ${(p) => (p.$colapsada ? "center" : "flex-start")};
   transition: background 0.15s ease, color 0.15s ease;
   &:hover { background: rgba(255, 255, 255, 0.08); color: ${(p) => p.theme.cores.sidebarText}; }
   &.active { background: ${(p) => p.theme.cores.sidebarActive}; color: #fff; font-weight: 600; }
+
+  @media (max-width: 860px) { justify-content: center; }
+`;
+
+const Rotulo = styled.span<{ $colapsada: boolean }>`
+  ${(p) => (p.$colapsada ? "display:none;" : "")}
+  @media (max-width: 860px) { display: none; }
 `;
 
 export function Sidebar() {
+  const [colapsada, setColapsada] = useState<boolean>(() => localStorage.getItem("sidebar-colapsada") === "1");
+
+  function alternar() {
+    setColapsada((v) => {
+      const nova = !v;
+      localStorage.setItem("sidebar-colapsada", nova ? "1" : "0");
+      return nova;
+    });
+  }
+
   return (
-    <Aside aria-label="navegação principal">
-      <Marca>
-        <Logo variante="branca" altura={30} />
-      </Marca>
+    <Aside aria-label="navegação principal" $colapsada={colapsada}>
+      <Topo $colapsada={colapsada}>
+        <MarcaBox>
+          <Logo variante="branca" altura={colapsada ? 22 : 28} />
+        </MarcaBox>
+        <BotaoColapsar
+          type="button"
+          onClick={alternar}
+          aria-label={colapsada ? "expandir menu" : "minimizar menu"}
+          title={colapsada ? "Expandir menu" : "Minimizar menu"}
+        >
+          {colapsada ? <PanelLeftOpen size={18} /> : <PanelLeftClose size={18} />}
+        </BotaoColapsar>
+      </Topo>
       <Grupos>
         {NAV.map((g) => (
           <div key={g.grupo} style={{ display: "contents" }}>
-            <Grupo>{g.grupo}</Grupo>
+            <Grupo $colapsada={colapsada}>{g.grupo}</Grupo>
             {g.itens.map(({ to, rotulo, Icon }) => (
-              <Item key={to} to={to} end={to === "/"}>
+              <Item key={to} to={to} end={to === "/"} $colapsada={colapsada} title={rotulo}>
                 <Icon size={18} />
-                {rotulo}
+                <Rotulo $colapsada={colapsada}>{rotulo}</Rotulo>
               </Item>
             ))}
           </div>
         ))}
       </Grupos>
-      <UsuarioMenu />
+      <UsuarioMenu colapsada={colapsada} />
     </Aside>
   );
 }
