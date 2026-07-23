@@ -128,6 +128,51 @@ export const TextInput = styled.input`
   &::placeholder { color: ${(p) => p.theme.cores.textMuted}; opacity: 0.7; }
 `;
 
+export const Select = styled.select`
+  font-size: 14px;
+  padding: 11px 13px;
+  border-radius: 11px;
+  border: 1.5px solid ${(p) => p.theme.cores.border};
+  background: ${(p) => p.theme.cores.surface};
+  color: ${(p) => p.theme.cores.text};
+  outline: none;
+  cursor: pointer;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  &:focus {
+    border-color: ${(p) => p.theme.cores.accent};
+    box-shadow: 0 0 0 3px ${(p) => p.theme.cores.accentSoft};
+  }
+`;
+
+export const Textarea = styled.textarea`
+  font-size: 14px;
+  padding: 11px 13px;
+  border-radius: 11px;
+  border: 1.5px solid ${(p) => p.theme.cores.border};
+  background: ${(p) => p.theme.cores.surface};
+  color: ${(p) => p.theme.cores.text};
+  outline: none;
+  resize: vertical;
+  min-height: 84px;
+  font-family: inherit;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  &:focus {
+    border-color: ${(p) => p.theme.cores.accent};
+    box-shadow: 0 0 0 3px ${(p) => p.theme.cores.accentSoft};
+  }
+  &::placeholder { color: ${(p) => p.theme.cores.textMuted}; opacity: 0.7; }
+`;
+
+export const Checkbox = styled.label`
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: ${(p) => p.theme.cores.text};
+  cursor: pointer;
+  input { width: 16px; height: 16px; accent-color: ${(p) => p.theme.cores.primary}; cursor: pointer; }
+`;
+
 /* ── Tags / badges ─────────────────────────────────────────── */
 export const Tag = styled.span<{ $tone?: "blue" | "green" | "orange" | "red" | "muted" }>`
   display: inline-flex;
