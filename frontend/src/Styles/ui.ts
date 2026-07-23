@@ -158,9 +158,15 @@ export const KpiCard = styled(Card)`
 `;
 
 export const KpiIcon = styled.span`
-  font-size: 22px;
-  display: block;
-  margin-bottom: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: ${(p) => p.theme.cores.accentSoft};
+  color: ${(p) => p.theme.cores.primary};
+  margin-bottom: 12px;
 `;
 
 export const KpiValue = styled.div`
@@ -186,6 +192,37 @@ export const EmptyState = styled(Card)`
 export const EmptyIcon = styled.div`
   font-size: 40px;
   margin-bottom: 12px;
+`;
+
+/* ── Tabela ─────────────────────────────────────────────────── */
+export const TableWrap = styled.div`
+  overflow-x: auto;
+  border-radius: 12px;
+  border: 1px solid ${(p) => p.theme.cores.border};
+`;
+
+export const Tabela = styled.table`
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+`;
+
+export const Th = styled.th`
+  text-align: left;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: ${(p) => p.theme.cores.textMuted};
+  background: ${(p) => p.theme.cores.surfaceAlt};
+  padding: 10px 14px;
+  white-space: nowrap;
+`;
+
+export const Td = styled.td`
+  padding: 10px 14px;
+  border-top: 1px solid ${(p) => p.theme.cores.border};
+  color: ${(p) => p.theme.cores.text};
 `;
 
 export const Banner = styled.div<{ $tone?: "info" | "warn" }>`

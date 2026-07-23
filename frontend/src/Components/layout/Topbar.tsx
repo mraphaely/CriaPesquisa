@@ -1,5 +1,6 @@
 import styled from "styled-components";
 import { useLocation } from "react-router-dom";
+import { LogOut } from "lucide-react";
 import { ThemeToggle } from "../ui/ThemeToggle.js";
 import { useAuth } from "../../App/auth/useAuth.js";
 import { Button, Tag } from "../../Styles/ui.js";
@@ -12,16 +13,21 @@ const TITULOS: Record<string, string> = {
 };
 
 const Bar = styled.header`
-  height: 60px;
+  min-height: 60px;
   background: ${(p) => p.theme.cores.surface};
   border-bottom: 1px solid ${(p) => p.theme.cores.border};
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 12px;
   padding: 0 24px;
   position: sticky;
   top: 0;
   z-index: 20;
+
+  @media (max-width: 640px) {
+    padding: 0 14px;
+  }
 `;
 
 const Titulo = styled.div`
@@ -34,7 +40,7 @@ const Titulo = styled.div`
 const Dir = styled.div`
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 12px;
 `;
 
 const Usuario = styled.div`
@@ -43,7 +49,9 @@ const Usuario = styled.div`
   gap: 8px;
   font-size: 13px;
   color: ${(p) => p.theme.cores.text};
-  @media (max-width: 640px) { span { display: none; } }
+  @media (max-width: 640px) {
+    span { display: none; }
+  }
 `;
 
 export function Topbar() {
@@ -62,8 +70,8 @@ export function Topbar() {
             <Tag $tone="blue">{usuario.papel}</Tag>
           </Usuario>
         )}
-        <Button type="button" $variant="ghost" onClick={sair}>
-          Sair
+        <Button type="button" $variant="ghost" onClick={sair} title="Sair">
+          <LogOut size={16} />
         </Button>
       </Dir>
     </Bar>
