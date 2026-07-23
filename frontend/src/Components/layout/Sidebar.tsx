@@ -2,6 +2,7 @@ import { NavLink } from "react-router-dom";
 import styled from "styled-components";
 import { LayoutDashboard, ClipboardList, Users, ScrollText, HelpCircle, type LucideIcon } from "lucide-react";
 import { Logo } from "../ui/Logo.js";
+import { UsuarioCard } from "./UsuarioCard.js";
 
 interface ItemNav {
   to: string;
@@ -131,12 +132,17 @@ const Rotulo = styled.span<{ $colapsada: boolean }>`
 
 const Rodape = styled.div<{ $colapsada: boolean }>`
   margin-top: auto;
-  padding-top: 10px;
+  padding-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
   @media (max-width: 860px) {
     margin-top: 0;
     padding-top: 0;
     padding-left: 12px;
     border-left: 1px solid rgba(255, 255, 255, 0.12);
+    flex-direction: row;
+    align-items: center;
   }
 `;
 
@@ -176,6 +182,7 @@ export function Sidebar({ colapsada }: { colapsada: boolean }) {
           <HelpCircle size={19} />
           <Rotulo $colapsada={colapsada}>Ajuda</Rotulo>
         </Ajuda>
+        <UsuarioCard colapsada={colapsada} />
       </Rodape>
     </Aside>
   );
