@@ -1,3 +1,4 @@
+import { ClipboardList } from "lucide-react";
 import {
   PageHeader,
   PageTitle,
@@ -21,7 +22,7 @@ export function Pesquisas() {
       </PageHeader>
 
       <EmptyState>
-        <EmptyIcon>🗂️</EmptyIcon>
+        <EmptyIcon><ClipboardList size={30} /></EmptyIcon>
         <SectionTitle>Nenhuma pesquisa ainda</SectionTitle>
         <Muted>
           Conecte o backend e crie sua primeira pesquisa. O construtor permite seções, perguntas de

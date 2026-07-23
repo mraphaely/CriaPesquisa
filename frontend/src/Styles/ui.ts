@@ -202,8 +202,15 @@ export const EmptyState = styled(Card)`
 `;
 
 export const EmptyIcon = styled.div`
-  font-size: 40px;
-  margin-bottom: 12px;
+  width: 66px;
+  height: 66px;
+  border-radius: 50%;
+  margin: 0 auto 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, ${(p) => p.theme.cores.accentSoft} 0%, ${(p) => p.theme.cores.primary}22 100%);
+  color: ${(p) => p.theme.cores.primary};
 `;
 
 /* ── Tabela ─────────────────────────────────────────────────── */
@@ -217,6 +224,8 @@ export const Tabela = styled.table`
   width: 100%;
   border-collapse: collapse;
   font-size: 13px;
+  tbody tr { transition: background 0.12s ease; }
+  tbody tr:hover td { background: ${(p) => p.theme.cores.surfaceAlt}; }
 `;
 
 export const Th = styled.th`

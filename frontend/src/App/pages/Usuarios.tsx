@@ -1,3 +1,4 @@
+import { Users } from "lucide-react";
 import {
   PageHeader,
   PageTitle,
@@ -21,7 +22,7 @@ export function Usuarios() {
       </PageHeader>
 
       <EmptyState>
-        <EmptyIcon>👥</EmptyIcon>
+        <EmptyIcon><Users size={30} /></EmptyIcon>
         <SectionTitle>Gestão de usuários</SectionTitle>
         <Muted>
           Papéis disponíveis: Administrador, Gestor (PO), Coletador e Visualizador. Conecte o backend
