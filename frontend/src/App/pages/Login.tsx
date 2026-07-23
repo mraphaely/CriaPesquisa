@@ -26,18 +26,17 @@ const rabisco = (x: number, y: number, s: number, cor: string, op: number) =>
   `<path transform='translate(${x} ${y}) scale(${s})' fill='none' stroke='${cor}' stroke-opacity='${op}' stroke-width='1.5' stroke-linecap='round' d='M-7 2 A4 4 0 1 1 -1 5 A7 7 0 1 0 8 -2'/>`;
 
 function fundoPadrao(cor: string, opacidade: number): string {
+  // Poucas formas num azulejo grande (360x360) => estampas esparsas e aleatórias.
   const formas = [
-    estrela(22, 26, 1, 12), estrela(118, 44, 0.7, -14), estrela(176, 108, 1.05, 22),
-    estrela(74, 150, 0.85, 4), estrela(30, 118, 0.6, 30), estrela(148, 178, 0.75, -8),
-    brilho(92, 92, 1), brilho(186, 28, 0.8), brilho(12, 86, 0.7), brilho(122, 132, 0.7),
-    coracao(56, 54, 0.85), coracao(190, 66, 0.6), coracao(98, 188, 0.7), coracao(160, 150, 0.6),
-    lua(150, 20, 1), lua(40, 182, 0.85), lua(196, 120, 0.7),
-    carinha(104, 68, 1, cor, opacidade), carinha(28, 174, 0.8, cor, opacidade),
-    carinha(184, 158, 0.9, cor, opacidade), carinha(66, 20, 0.72, cor, opacidade),
-    rabisco(150, 108, 0.9, cor, opacidade), rabisco(14, 52, 0.8, cor, opacidade),
-    "<circle cx='96' cy='22' r='2'/><circle cx='120' cy='176' r='2.2'/><circle cx='14' cy='150' r='1.8'/><circle cx='70' cy='104' r='1.6'/><circle cx='196' cy='188' r='1.8'/>",
+    estrela(48, 60, 1, 12), estrela(300, 96, 0.8, -14), estrela(196, 300, 0.9, 10),
+    lua(322, 302, 0.9), lua(72, 212, 0.75),
+    coracao(120, 132, 0.85), coracao(284, 250, 0.7),
+    brilho(250, 44, 0.9), brilho(42, 320, 0.75),
+    carinha(232, 172, 0.95, cor, opacidade), carinha(120, 300, 0.8, cor, opacidade),
+    rabisco(322, 182, 0.85, cor, opacidade),
+    "<circle cx='170' cy='40' r='2.2'/><circle cx='60' cy='150' r='1.8'/><circle cx='300' cy='344' r='2'/>",
   ].join("");
-  const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='210' height='210' viewBox='0 0 210 210'><g fill='${cor}' fill-opacity='${opacidade}'>${formas}</g></svg>`;
+  const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='360' height='360' viewBox='0 0 360 360'><g fill='${cor}' fill-opacity='${opacidade}'>${formas}</g></svg>`;
   return `url("data:image/svg+xml,${encodeURIComponent(svg)}")`;
 }
 
