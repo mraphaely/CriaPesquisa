@@ -14,9 +14,9 @@ const Rodape = styled.footer`
 `;
 
 const ImgFooter = styled.img`
-  width: 100%;
-  max-width: 520px;
-  height: auto;
+  height: 44px;
+  width: auto;
+  max-width: 100%;
   object-fit: contain;
   display: block;
 `;
