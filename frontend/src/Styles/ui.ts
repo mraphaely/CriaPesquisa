@@ -2,7 +2,7 @@ import styled, { css } from "styled-components";
 
 /* ── Superfícies ───────────────────────────────────────────── */
 export const Card = styled.div`
-  background: ${(p) => p.theme.cores.surface};
+  background: linear-gradient(180deg, ${(p) => p.theme.cores.surface} 0%, ${(p) => p.theme.cores.surfaceAlt} 100%);
   border: 1px solid ${(p) => p.theme.cores.border};
   border-radius: 16px;
   box-shadow: ${(p) => p.theme.cores.shadow};
@@ -24,7 +24,10 @@ export const PageTitle = styled.h1`
   font-weight: 700;
   letter-spacing: -0.3px;
   margin: 0;
-  color: ${(p) => p.theme.cores.primaryDark};
+  background: linear-gradient(120deg, ${(p) => p.theme.cores.primaryDark} 0%, ${(p) => p.theme.cores.primary} 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 `;
 
 export const PageSubtitle = styled.p`
@@ -55,7 +58,7 @@ export const Button = styled.button<{ $variant?: "primary" | "ghost" | "danger";
   padding: 10px 18px;
   cursor: pointer;
   border: 1px solid transparent;
-  transition: background 0.15s ease, border-color 0.15s ease, filter 0.15s ease;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease, background 0.15s ease;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -74,20 +77,24 @@ export const Button = styled.button<{ $variant?: "primary" | "ghost" | "danger";
         `;
       case "danger":
         return css`
-          background: ${c.danger};
+          background: linear-gradient(135deg, ${c.danger} 0%, ${c.danger} 100%);
           color: #fff;
-          &:hover { filter: brightness(0.95); }
+          box-shadow: 0 6px 16px ${c.danger}3a;
+          &:hover { filter: brightness(1.05); transform: translateY(-1px); }
+          &:active { transform: translateY(0); }
         `;
       default:
         return css`
-          background: ${c.primary};
+          background: linear-gradient(135deg, ${c.accent} 0%, ${c.primary} 55%, ${c.primaryDark} 100%);
           color: #fff;
-          &:hover { background: ${c.primaryDark}; }
+          box-shadow: 0 6px 16px ${c.primary}3a;
+          &:hover { filter: brightness(1.06); transform: translateY(-1px); box-shadow: 0 8px 22px ${c.primary}4d; }
+          &:active { transform: translateY(0); }
         `;
     }
   }}
 
-  &:disabled { opacity: 0.55; cursor: not-allowed; }
+  &:disabled { opacity: 0.55; cursor: not-allowed; filter: none; transform: none; box-shadow: none; }
 `;
 
 /* ── Formulário ────────────────────────────────────────────── */
@@ -150,22 +157,27 @@ export const KpiRow = styled.div`
   margin-bottom: 22px;
 `;
 
-export const KpiCard = styled(Card)`
+export const KpiCard = styled(Card)<{ $cor?: string }>`
   padding: 18px 18px 16px;
-  border-left: 4px solid ${(p) => p.theme.cores.accent};
+  border-top: 3px solid ${(p) => p.$cor ?? p.theme.cores.accent};
   position: relative;
   overflow: hidden;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 28px ${(p) => (p.$cor ?? p.theme.cores.primary)}26;
+  }
 `;
 
-export const KpiIcon = styled.span`
+export const KpiIcon = styled.span<{ $cor?: string }>`
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 40px;
-  height: 40px;
-  border-radius: 12px;
-  background: ${(p) => p.theme.cores.accentSoft};
-  color: ${(p) => p.theme.cores.primary};
+  width: 42px;
+  height: 42px;
+  border-radius: 13px;
+  background: ${(p) => (p.$cor ?? p.theme.cores.primary)}22;
+  color: ${(p) => p.$cor ?? p.theme.cores.primary};
   margin-bottom: 12px;
 `;
 

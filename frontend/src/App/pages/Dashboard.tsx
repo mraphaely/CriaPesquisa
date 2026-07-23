@@ -108,11 +108,11 @@ export function Dashboard() {
       </Banner>
 
       <KpiRow>
-        <KpiCard><KpiIcon><Users size={20} /></KpiIcon><KpiValue>{fmtMil(TOTAIS.totalBeneficiarios)}</KpiValue><KpiLabel>Beneficiários</KpiLabel></KpiCard>
-        <KpiCard><KpiIcon><Baby size={20} /></KpiIcon><KpiValue>{fmtMil(TOTAIS.criancas)}</KpiValue><KpiLabel>Crianças</KpiLabel></KpiCard>
-        <KpiCard><KpiIcon><HeartPulse size={20} /></KpiIcon><KpiValue>{fmtMil(TOTAIS.gestantes)}</KpiValue><KpiLabel>Gestantes</KpiLabel></KpiCard>
-        <KpiCard><KpiIcon><MapPin size={20} /></KpiIcon><KpiValue>{TOTAIS.municipios}</KpiValue><KpiLabel>Municípios</KpiLabel></KpiCard>
-        <KpiCard><KpiIcon><Wallet size={20} /></KpiIcon><KpiValue>R${(TOTAIS.investimentoMensal / 1e6).toFixed(1).replace(".", ",")}Mi</KpiValue><KpiLabel>Investimento/mês</KpiLabel></KpiCard>
+        <KpiCard $cor="#1756B8"><KpiIcon $cor="#1756B8"><Users size={20} /></KpiIcon><KpiValue>{fmtMil(TOTAIS.totalBeneficiarios)}</KpiValue><KpiLabel>Beneficiários</KpiLabel></KpiCard>
+        <KpiCard $cor="#16A34A"><KpiIcon $cor="#16A34A"><Baby size={20} /></KpiIcon><KpiValue>{fmtMil(TOTAIS.criancas)}</KpiValue><KpiLabel>Crianças</KpiLabel></KpiCard>
+        <KpiCard $cor="#EA580C"><KpiIcon $cor="#EA580C"><HeartPulse size={20} /></KpiIcon><KpiValue>{fmtMil(TOTAIS.gestantes)}</KpiValue><KpiLabel>Gestantes</KpiLabel></KpiCard>
+        <KpiCard $cor="#7C3AED"><KpiIcon $cor="#7C3AED"><MapPin size={20} /></KpiIcon><KpiValue>{TOTAIS.municipios}</KpiValue><KpiLabel>Municípios</KpiLabel></KpiCard>
+        <KpiCard $cor="#0EA5E9"><KpiIcon $cor="#0EA5E9"><Wallet size={20} /></KpiIcon><KpiValue>R${(TOTAIS.investimentoMensal / 1e6).toFixed(1).replace(".", ",")}Mi</KpiValue><KpiLabel>Investimento/mês</KpiLabel></KpiCard>
       </KpiRow>
 
       <GradeMapa>
