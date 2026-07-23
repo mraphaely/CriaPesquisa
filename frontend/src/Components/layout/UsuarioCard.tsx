@@ -2,26 +2,25 @@ import styled from "styled-components";
 import { LogOut } from "lucide-react";
 import { useAuth } from "../../App/auth/useAuth.js";
 
-const Btn = styled.button<{ $colapsada: boolean }>`
+const Btn = styled.button`
   display: flex;
   align-items: center;
-  gap: 12px;
+  justify-content: center;
+  gap: 10px;
   width: 100%;
   padding: 11px 12px;
   border: none;
   border-radius: 12px;
   cursor: pointer;
-  background: transparent;
-  color: ${(p) => p.theme.cores.sidebarMuted};
+  background: ${(p) => p.theme.cores.danger}22;
+  color: ${(p) => p.theme.cores.danger};
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 700;
   white-space: nowrap;
-  justify-content: ${(p) => (p.$colapsada ? "center" : "flex-start")};
-  transition: background 0.15s ease, color 0.15s ease;
-  &:hover { background: rgba(255, 255, 255, 0.1); color: #fff; }
+  transition: background 0.15s ease, filter 0.15s ease;
+  &:hover { background: ${(p) => p.theme.cores.danger}33; filter: brightness(1.05); }
 
   @media (max-width: 860px) {
-    justify-content: center;
     width: auto;
   }
 `;
@@ -36,7 +35,7 @@ export function UsuarioCard({ colapsada }: { colapsada: boolean }) {
   if (!usuario) return null;
 
   return (
-    <Btn type="button" onClick={sair} $colapsada={colapsada} title="Sair" aria-label="sair">
+    <Btn type="button" onClick={sair} title="Sair" aria-label="sair">
       <LogOut size={19} />
       <Rotulo $colapsada={colapsada}>Sair</Rotulo>
     </Btn>
