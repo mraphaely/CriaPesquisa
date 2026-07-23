@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import styled from "styled-components";
-import { ArrowLeft, Save } from "lucide-react";
+import { ArrowLeft, Save, User } from "lucide-react";
 import { useCriarUsuario, type Papel } from "../api/usuarios.js";
 import {
   PageHeader,
@@ -40,6 +40,31 @@ const Acoes = styled.div`
   flex-wrap: wrap;
 `;
 
+const Form = styled.form`
+  width: 100%;
+  max-width: 620px;
+  margin: 0 auto;
+`;
+
+const SecHeader = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 18px;
+`;
+
+const SecIcon = styled.span`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 11px;
+  background: ${(p) => p.theme.cores.accentSoft};
+  color: ${(p) => p.theme.cores.primary};
+  flex-shrink: 0;
+`;
+
 export function NovoUsuario() {
   const navigate = useNavigate();
   const { mutateAsync, isPending } = useCriarUsuario();
@@ -66,7 +91,7 @@ export function NovoUsuario() {
   }
 
   return (
-    <form onSubmit={onSubmit}>
+    <Form onSubmit={onSubmit}>
       <PageHeader>
         <div>
           <PageTitle>Novo usuário</PageTitle>
@@ -78,8 +103,11 @@ export function NovoUsuario() {
         </Button>
       </PageHeader>
 
-      <Card style={{ marginBottom: 16, maxWidth: 640 }}>
-        <SectionTitle>Dados do usuário</SectionTitle>
+      <Card style={{ marginBottom: 16 }}>
+        <SecHeader>
+          <SecIcon><User size={19} /></SecIcon>
+          <SectionTitle style={{ margin: 0 }}>Dados do usuário</SectionTitle>
+        </SecHeader>
         <Field>
           <Label htmlFor="nome">Nome *</Label>
           <TextInput id="nome" value={nome} onChange={(e) => setNome(e.target.value)} placeholder="Nome completo" />
@@ -104,18 +132,18 @@ export function NovoUsuario() {
         </Linha2>
       </Card>
 
-      {erro && <Banner $tone="warn" role="alert" style={{ marginBottom: 16, maxWidth: 640 }}>{erro}</Banner>}
+      {erro && <Banner $tone="warn" role="alert" style={{ marginBottom: 16 }}>{erro}</Banner>}
 
-      <Acoes style={{ maxWidth: 640 }}>
+      <Acoes>
         <Button type="button" $variant="ghost" onClick={() => navigate("/usuarios")}>Cancelar</Button>
         <Button type="submit" disabled={isPending}>
           <Save size={16} />
           {isPending ? "Salvando…" : "Salvar usuário"}
         </Button>
       </Acoes>
-      <Muted style={{ marginTop: 12, fontSize: 12, maxWidth: 640 }}>
+      <Muted style={{ marginTop: 12, fontSize: 12 }}>
         Em modo demonstração o usuário não é persistido — conecte o backend para cadastrar de verdade.
       </Muted>
-    </form>
+    </Form>
   );
 }
