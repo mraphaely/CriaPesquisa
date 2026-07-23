@@ -14,10 +14,10 @@ const Rodape = styled.footer`
 `;
 
 const ImgFooter = styled.img`
-  max-width: 100%;
-  max-height: 64px;
+  height: 56px;
   width: auto;
-  height: auto;
+  max-width: 100%;
+  object-fit: contain;
   display: block;
 `;
 
