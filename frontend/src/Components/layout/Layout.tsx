@@ -2,6 +2,7 @@ import styled from "styled-components";
 import { Outlet } from "react-router-dom";
 import { Sidebar } from "./Sidebar.js";
 import { Topbar } from "./Topbar.js";
+import { Footer } from "./Footer.js";
 
 const Shell = styled.div`
   display: flex;
@@ -33,6 +34,7 @@ export function Layout() {
         <Conteudo>
           <Outlet />
         </Conteudo>
+        <Footer />
       </Main>
     </Shell>
   );
