@@ -1,6 +1,6 @@
 import { createContext, useMemo, useState, type ReactNode } from "react";
 
-export type Usuario = { id: string; nome: string; email: string; papel: string };
+export type Usuario = { id: string; nome: string; email: string; papel: string; foto?: string };
 export type AuthValor = { usuario: Usuario | null; token: string | null; autenticado: boolean; entrar: (t: string, u: Usuario) => void; sair: () => void };
 
 export const AuthCtx = createContext<AuthValor | null>(null);
