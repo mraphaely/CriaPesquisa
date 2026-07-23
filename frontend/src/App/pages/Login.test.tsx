@@ -5,6 +5,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter } from "react-router-dom";
 import { Login } from "./Login.js";
 import { AuthProvider } from "../auth/AuthContext.js";
+import { ThemeModeProvider } from "../theme/ThemeModeContext.js";
 import { queryClient } from "../lib/queryClient.js";
 import { api } from "../lib/axios.js";
 
@@ -13,9 +14,11 @@ beforeEach(() => { localStorage.clear(); queryClient.clear(); });
 
 function renderLogin() {
   return render(
-    <QueryClientProvider client={queryClient}>
-      <AuthProvider><MemoryRouter><Login /></MemoryRouter></AuthProvider>
-    </QueryClientProvider>
+    <ThemeModeProvider>
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider><MemoryRouter><Login /></MemoryRouter></AuthProvider>
+      </QueryClientProvider>
+    </ThemeModeProvider>
   );
 }
 
