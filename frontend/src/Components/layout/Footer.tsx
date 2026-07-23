@@ -1,5 +1,4 @@
-import styled from "styled-components";
-import { Logo } from "../ui/Logo.js";
+import styled, { useTheme } from "styled-components";
 
 const Rodape = styled.footer`
   border-top: 1px solid ${(p) => p.theme.cores.border};
@@ -8,16 +7,16 @@ const Rodape = styled.footer`
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   text-align: center;
 `;
 
-const Logos = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 20px;
-  flex-wrap: wrap;
+const ImgFooter = styled.img`
+  max-width: 100%;
+  max-height: 64px;
+  width: auto;
+  height: auto;
+  display: block;
 `;
 
 const Copyright = styled.div`
@@ -32,12 +31,13 @@ const Nome = styled.span`
 `;
 
 export function Footer() {
+  const t = useTheme();
   const ano = new Date().getFullYear();
+  const src = t.modo === "escuro" ? "/Footer-DarkMode.png" : "/Footer-LightMode.png";
+
   return (
     <Rodape>
-      <Logos>
-        <Logo variante="colorida" altura={34} />
-      </Logos>
+      <ImgFooter src={src} alt="CRIA — Primeira Infância de Alagoas" />
       <Copyright>
         © {ano} <Nome>CriaPesquisa</Nome> — Todos os direitos reservados.
         <br />
