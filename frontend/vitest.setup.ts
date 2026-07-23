@@ -1,4 +1,6 @@
 import "@testing-library/jest-dom";
+// Mock de canvas 2D para o jsdom (Chart.js precisa de getContext no ambiente de teste).
+import "vitest-canvas-mock";
 
 // Node 22+ expõe um getter global `localStorage` (Web Storage API experimental)
 // que retorna `undefined` sem a flag `--localstorage-file`. Como essa propriedade

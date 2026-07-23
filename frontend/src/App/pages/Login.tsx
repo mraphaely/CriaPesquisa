@@ -1,8 +1,10 @@
 import { useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import styled from "styled-components";
+import { LogIn, Eye } from "lucide-react";
 import { useLogin } from "../api/useLogin.js";
 import { useAuth } from "../auth/useAuth.js";
+import { Logo } from "../../Components/ui/Logo.js";
 import { Button, Field, Label, TextInput, Muted, Banner } from "../../Styles/ui.js";
 
 const Page = styled.div`
@@ -11,40 +13,36 @@ const Page = styled.div`
   place-items: center;
   padding: 24px;
   background:
-    radial-gradient(1200px 600px at 100% -10%, ${(p) => p.theme.cores.accentSoft} 0%, transparent 55%),
-    radial-gradient(900px 500px at -10% 110%, ${(p) => p.theme.cores.accentSoft} 0%, transparent 55%),
+    radial-gradient(1100px 550px at 100% -10%, ${(p) => p.theme.cores.accentSoft} 0%, transparent 55%),
+    radial-gradient(900px 480px at -10% 110%, ${(p) => p.theme.cores.accentSoft} 0%, transparent 55%),
+    repeating-linear-gradient(90deg, ${(p) => p.theme.cores.border}55 0 1px, transparent 1px 44px),
+    repeating-linear-gradient(0deg, ${(p) => p.theme.cores.border}55 0 1px, transparent 1px 44px),
     ${(p) => p.theme.cores.bg};
 `;
 
 const Cartao = styled.div`
   width: 100%;
-  max-width: 400px;
+  max-width: 410px;
   background: ${(p) => p.theme.cores.surface};
   border: 1px solid ${(p) => p.theme.cores.border};
-  border-radius: 20px;
-  padding: 34px 30px;
+  border-radius: 22px;
+  padding: 36px 30px;
   box-shadow: ${(p) => p.theme.cores.shadow};
 `;
 
 const Brand = styled.div`
-  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
   margin-bottom: 22px;
-`;
-
-const Logo = styled.div`
-  font-family: 'Space Grotesk', sans-serif;
-  font-size: 30px;
-  font-weight: 700;
-  color: ${(p) => p.theme.cores.primaryDark};
-  letter-spacing: -0.5px;
-  span { color: ${(p) => p.theme.cores.accent}; }
 `;
 
 const Sub = styled.div`
   font-size: 11px;
   color: ${(p) => p.theme.cores.textMuted};
-  margin-top: 4px;
-  letter-spacing: 0.4px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
 `;
 
 const Titulo = styled.h1`
@@ -93,8 +91,8 @@ export function Login() {
     <Page>
       <Cartao>
         <Brand>
-          <Logo>CRIA<span>.</span></Logo>
-          <Sub>PESQUISA · Primeira Infância de Alagoas</Sub>
+          <Logo variante="colorida" altura={46} />
+          <Sub>Pesquisa · Primeira Infância de Alagoas</Sub>
         </Brand>
         <Titulo>Entrar</Titulo>
         <form onSubmit={onSubmit} aria-label="login">
@@ -107,10 +105,16 @@ export function Login() {
             <TextInput id="senha" type="password" placeholder="••••••••" value={senha} onChange={(e) => setSenha(e.target.value)} />
           </Field>
           {erro && <Banner $tone="warn" role="alert" style={{ marginBottom: 14 }}>{erro}</Banner>}
-          <Button type="submit" $block disabled={isPending}>{isPending ? "Entrando…" : "Entrar"}</Button>
+          <Button type="submit" $block disabled={isPending}>
+            <LogIn size={16} />
+            {isPending ? "Entrando…" : "Entrar"}
+          </Button>
         </form>
         <Divisor>ou</Divisor>
-        <Button type="button" $variant="ghost" $block onClick={verDemonstracao}>Ver demonstração</Button>
+        <Button type="button" $variant="ghost" $block onClick={verDemonstracao}>
+          <Eye size={16} />
+          Ver demonstração
+        </Button>
         <Muted style={{ textAlign: "center", marginTop: 14, fontSize: 12 }}>
           O login real requer o backend conectado. A demonstração abre o sistema sem servidor.
         </Muted>

@@ -1,19 +1,27 @@
 import { NavLink } from "react-router-dom";
 import styled from "styled-components";
+import { LayoutDashboard, ClipboardList, Users, ScrollText, type LucideIcon } from "lucide-react";
+import { Logo } from "../ui/Logo.js";
 
-const NAV = [
+interface ItemNav {
+  to: string;
+  rotulo: string;
+  Icon: LucideIcon;
+}
+
+const NAV: { grupo: string; itens: ItemNav[] }[] = [
   {
     grupo: "Principal",
     itens: [
-      { to: "/", rotulo: "Dashboard", icone: "📊" },
-      { to: "/pesquisas", rotulo: "Pesquisas", icone: "🗂️" },
+      { to: "/", rotulo: "Dashboard", Icon: LayoutDashboard },
+      { to: "/pesquisas", rotulo: "Pesquisas", Icon: ClipboardList },
     ],
   },
   {
     grupo: "Administração",
     itens: [
-      { to: "/usuarios", rotulo: "Usuários", icone: "👥" },
-      { to: "/logs", rotulo: "Auditoria", icone: "🧾" },
+      { to: "/usuarios", rotulo: "Usuários", Icon: Users },
+      { to: "/logs", rotulo: "Auditoria", Icon: ScrollText },
     ],
   },
 ];
@@ -26,28 +34,41 @@ const Aside = styled.nav`
   display: flex;
   flex-direction: column;
   padding: 22px 14px;
-  @media (max-width: 860px) { width: 100%; padding: 14px; }
+
+  @media (max-width: 860px) {
+    width: 100%;
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px;
+    overflow-x: auto;
+  }
 `;
 
 const Marca = styled.div`
   padding: 0 8px 18px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   margin-bottom: 10px;
+
+  @media (max-width: 860px) {
+    padding: 0 12px 0 4px;
+    margin-bottom: 0;
+    border-bottom: none;
+    border-right: 1px solid rgba(255, 255, 255, 0.12);
+    flex-shrink: 0;
+  }
 `;
 
-const Logo = styled.div`
-  font-family: 'Space Grotesk', sans-serif;
-  font-size: 26px;
-  font-weight: 700;
-  line-height: 1;
-  span { color: ${(p) => p.theme.cores.accent}; }
-`;
+const Grupos = styled.div`
+  display: flex;
+  flex-direction: column;
+  flex: 1;
 
-const Sub = styled.div`
-  font-size: 10px;
-  color: ${(p) => p.theme.cores.sidebarMuted};
-  margin-top: 5px;
-  line-height: 1.4;
+  @media (max-width: 860px) {
+    flex-direction: row;
+    align-items: center;
+    gap: 6px;
+  }
 `;
 
 const Grupo = styled.div`
@@ -57,6 +78,10 @@ const Grupo = styled.div`
   text-transform: uppercase;
   color: ${(p) => p.theme.cores.sidebarMuted};
   padding: 14px 10px 6px;
+
+  @media (max-width: 860px) {
+    display: none;
+  }
 `;
 
 const Item = styled(NavLink)`
@@ -69,41 +94,31 @@ const Item = styled(NavLink)`
   font-size: 13px;
   font-weight: 500;
   margin-bottom: 2px;
+  white-space: nowrap;
   transition: background 0.15s ease, color 0.15s ease;
   &:hover { background: rgba(255, 255, 255, 0.08); color: ${(p) => p.theme.cores.sidebarText}; }
   &.active { background: ${(p) => p.theme.cores.sidebarActive}; color: #fff; font-weight: 600; }
-`;
-
-const Icone = styled.span`
-  font-size: 16px;
-  width: 20px;
-  text-align: center;
 `;
 
 export function Sidebar() {
   return (
     <Aside aria-label="navegação principal">
       <Marca>
-        <Logo>
-          CRIA<span>.</span>
-        </Logo>
-        <Sub>
-          Secretaria da
-          <br />
-          Primeira Infância · AL
-        </Sub>
+        <Logo variante="branca" altura={30} />
       </Marca>
-      {NAV.map((g) => (
-        <div key={g.grupo}>
-          <Grupo>{g.grupo}</Grupo>
-          {g.itens.map((i) => (
-            <Item key={i.to} to={i.to} end={i.to === "/"}>
-              <Icone>{i.icone}</Icone>
-              {i.rotulo}
-            </Item>
-          ))}
-        </div>
-      ))}
+      <Grupos>
+        {NAV.map((g) => (
+          <div key={g.grupo} style={{ display: "contents" }}>
+            <Grupo>{g.grupo}</Grupo>
+            {g.itens.map(({ to, rotulo, Icon }) => (
+              <Item key={to} to={to} end={to === "/"}>
+                <Icon size={18} />
+                {rotulo}
+              </Item>
+            ))}
+          </div>
+        ))}
+      </Grupos>
     </Aside>
   );
 }

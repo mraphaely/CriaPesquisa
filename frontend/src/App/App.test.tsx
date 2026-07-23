@@ -1,6 +1,14 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 
+// O Dashboard usa Chart.js (canvas), que não roda no jsdom. Como este teste só
+// verifica o layout (heading + navegação), stubamos os gráficos como no-op.
+vi.mock("react-chartjs-2", () => ({
+  Doughnut: () => null,
+  Bar: () => null,
+  Line: () => null,
+}));
+
 // `router.tsx` cria o `createBrowserRouter` uma única vez, no carregamento do
 // módulo, a partir da URL corrente (`window.location`). Por isso cada teste
 // ajusta a URL via `history.pushState` e reimporta `App` (com
