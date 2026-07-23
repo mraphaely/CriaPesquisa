@@ -54,13 +54,24 @@ const Page = styled.div`
 `;
 
 const Cartao = styled.div`
+  position: relative;
+  overflow: hidden;
   width: 100%;
   max-width: 410px;
   background: ${(p) => p.theme.cores.surface};
   border: 1px solid ${(p) => p.theme.cores.border};
   border-radius: 22px;
-  padding: 36px 30px;
+  padding: 38px 30px 30px;
   box-shadow: ${(p) => p.theme.cores.shadow};
+  &::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 5px;
+    background: linear-gradient(90deg, #e6417a, #18a5c4, #f39312, #8bc53f);
+  }
 `;
 
 const Brand = styled.div`

@@ -1,3 +1,4 @@
+import { ScrollText } from "lucide-react";
 import {
   PageHeader,
   PageTitle,
@@ -19,7 +20,7 @@ export function Logs() {
       </PageHeader>
 
       <EmptyState>
-        <EmptyIcon>🧾</EmptyIcon>
+        <EmptyIcon><ScrollText size={30} /></EmptyIcon>
         <SectionTitle>Log de alterações</SectionTitle>
         <Muted>
           Toda criação, edição, exclusão, publicação e restauração fica registrada (quem, quando,
