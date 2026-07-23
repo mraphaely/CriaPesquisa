@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import styled from "styled-components";
-import { Plus, Trash2, ArrowLeft, Save } from "lucide-react";
+import { Plus, Trash2, ArrowLeft, Save, FileText, ListChecks } from "lucide-react";
 import { useAuth } from "../auth/useAuth.js";
 import { useCriarPesquisa, type PerguntaPayload, type TipoPergunta } from "../api/pesquisas.js";
 import {
@@ -105,6 +105,31 @@ const Acoes = styled.div`
   flex-wrap: wrap;
 `;
 
+const Form = styled.form`
+  width: 100%;
+  max-width: 760px;
+  margin: 0 auto;
+`;
+
+const SecHeader = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 18px;
+`;
+
+const SecIcon = styled.span`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 11px;
+  background: ${(p) => p.theme.cores.accentSoft};
+  color: ${(p) => p.theme.cores.primary};
+  flex-shrink: 0;
+`;
+
 export function NovaPesquisa() {
   const navigate = useNavigate();
   const { usuario } = useAuth();
@@ -181,7 +206,7 @@ export function NovaPesquisa() {
   }
 
   return (
-    <form onSubmit={onSubmit}>
+    <Form onSubmit={onSubmit}>
       <PageHeader>
         <div>
           <PageTitle>Nova pesquisa</PageTitle>
@@ -194,7 +219,10 @@ export function NovaPesquisa() {
       </PageHeader>
 
       <Card style={{ marginBottom: 16 }}>
-        <SectionTitle>Detalhes da pesquisa</SectionTitle>
+        <SecHeader>
+          <SecIcon><FileText size={19} /></SecIcon>
+          <SectionTitle style={{ margin: 0 }}>Detalhes da pesquisa</SectionTitle>
+        </SecHeader>
         <Field>
           <Label htmlFor="titulo">Título *</Label>
           <TextInput id="titulo" value={titulo} onChange={(e) => setTitulo(e.target.value)} placeholder="Ex.: Cartão CRIA — Criança" />
@@ -216,7 +244,10 @@ export function NovaPesquisa() {
       </Card>
 
       <Card style={{ marginBottom: 16 }}>
-        <SectionTitle>Perguntas</SectionTitle>
+        <SecHeader>
+          <SecIcon><ListChecks size={19} /></SecIcon>
+          <SectionTitle style={{ margin: 0 }}>Perguntas</SectionTitle>
+        </SecHeader>
         {perguntas.map((p, i) => (
           <PerguntaCard key={i}>
             <PerguntaTopo>
@@ -283,6 +314,6 @@ export function NovaPesquisa() {
       <Muted style={{ textAlign: "center", marginTop: 12, fontSize: 12 }}>
         Em modo demonstração a pesquisa não é persistida — conecte o backend para salvar de verdade.
       </Muted>
-    </form>
+    </Form>
   );
 }
