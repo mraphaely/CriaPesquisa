@@ -1,4 +1,6 @@
 import styled, { useTheme } from "styled-components";
+import footerLight from "../../assets/Footer-LightMode.png";
+import footerDark from "../../assets/Footer-DarkMode.png";
 
 const Rodape = styled.footer`
   border-top: 1px solid ${(p) => p.theme.cores.border};
@@ -33,7 +35,7 @@ const Nome = styled.span`
 export function Footer() {
   const t = useTheme();
   const ano = new Date().getFullYear();
-  const src = t.modo === "escuro" ? "/Footer-DarkMode.png" : "/Footer-LightMode.png";
+  const src = t.modo === "escuro" ? footerDark : footerLight;
 
   return (
     <Rodape>

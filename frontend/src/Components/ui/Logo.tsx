@@ -1,4 +1,7 @@
 import { useState, type CSSProperties } from "react";
+import logoBranca from "../../assets/LogoCria-White.png";
+import logoColorida from "../../assets/LogoCria-Colorido.png";
+import logoAzul from "../../assets/LogoCria-Blue.png";
 
 type Variante = "branca" | "colorida" | "azul";
 
@@ -16,11 +19,11 @@ const CONTORNO: Record<Variante, string> = {
   azul: "#C9CDD6",
 };
 
-// Arquivos reais das logos em public/.
+// Logos importadas como assets do Vite (bundle confiável, evita quirks do public/).
 const ARQUIVO: Record<Variante, string> = {
-  branca: "/LogoCria-White.png",
-  colorida: "/LogoCria-Colorido.png",
-  azul: "/LogoCria-Blue.png",
+  branca: logoBranca,
+  colorida: logoColorida,
+  azul: logoAzul,
 };
 
 /**
