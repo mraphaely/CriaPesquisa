@@ -1,10 +1,24 @@
-import { useState } from "react";
+import { useState, type CSSProperties } from "react";
 
 type Variante = "branca" | "colorida" | "azul";
 
+// Cores dos caracteres por variante (aproximação da logo do CRIA).
+const CORES: Record<Variante, [string, string, string, string]> = {
+  colorida: ["#E6417A", "#18A5C4", "#F39312", "#8BC53F"],
+  branca: ["#FFFFFF", "#FFFFFF", "#FFFFFF", "#FFFFFF"],
+  azul: ["#1756B8", "#1756B8", "#1756B8", "#1756B8"],
+};
+
+// Cor do contorno (a "linha" em volta do nome cria).
+const CONTORNO: Record<Variante, string> = {
+  colorida: "#C9CDD6",
+  branca: "rgba(255,255,255,0.85)",
+  azul: "#C9CDD6",
+};
+
 /**
- * Logo do CRIA. Usa o arquivo em `public/cria-<variante>.png` quando existir;
- * caso contrário, cai num wordmark estilizado (para não quebrar o layout).
+ * Logo do CRIA. Usa `public/cria-<variante>.png` quando existir; senão,
+ * cai num wordmark "cria" com contorno (fonte arredondada) parecido com a logo.
  * Arquivos esperados: public/cria-branca.png, cria-colorida.png, cria-azul.png
  */
 export function Logo({ variante, altura = 34 }: { variante: Variante; altura?: number }) {
@@ -21,28 +35,29 @@ export function Logo({ variante, altura = 34 }: { variante: Variante; altura?: n
     );
   }
 
-  const base: React.CSSProperties = {
-    fontFamily: "'Space Grotesk', sans-serif",
-    fontWeight: 700,
+  const letras = ["c", "r", "i", "a"];
+  const cores = CORES[variante];
+  const larguraLinha = Math.max(2, altura * 0.09);
+
+  const wordmark: CSSProperties = {
+    fontFamily: "'Baloo 2', system-ui, sans-serif",
+    fontWeight: 800,
     fontSize: altura,
     lineHeight: 1,
-    letterSpacing: "-1px",
+    letterSpacing: "-0.5px",
+    display: "inline-flex",
+    // contorno em volta das letras (paint-order: stroke desenha a linha atrás do preenchimento)
+    WebkitTextStroke: `${larguraLinha}px ${CONTORNO[variante]}`,
+    paintOrder: "stroke",
   };
 
-  if (variante === "colorida") {
-    return (
-      <span style={base} aria-label="CRIA">
-        <span style={{ color: "#E11D63" }}>c</span>
-        <span style={{ color: "#12A5C4" }}>r</span>
-        <span style={{ color: "#F39312" }}>i</span>
-        <span style={{ color: "#8BC53F" }}>a</span>
-      </span>
-    );
-  }
-
   return (
-    <span style={{ ...base, color: variante === "branca" ? "#FFFFFF" : "#0B2D6E" }} aria-label="CRIA">
-      cria
+    <span style={wordmark} aria-label="CRIA">
+      {letras.map((l, i) => (
+        <span key={i} style={{ color: cores[i] }}>
+          {l}
+        </span>
+      ))}
     </span>
   );
 }
