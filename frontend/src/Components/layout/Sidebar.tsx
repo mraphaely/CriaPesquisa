@@ -29,6 +29,7 @@ const NAV: { grupo: string; itens: ItemNav[] }[] = [
 
 const Aside = styled.nav<{ $colapsada: boolean }>`
   background: ${(p) => p.theme.cores.sidebar};
+  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.06) 0%, rgba(255, 255, 255, 0) 24%);
   color: ${(p) => p.theme.cores.sidebarText};
   width: ${(p) => (p.$colapsada ? "84px" : "240px")};
   flex-shrink: 0;
@@ -128,10 +129,10 @@ const Item = styled(NavLink)<{ $colapsada: boolean }>`
   justify-content: ${(p) => (p.$colapsada ? "center" : "flex-start")};
   &:hover { background: rgba(255, 255, 255, 0.08); color: ${(p) => p.theme.cores.sidebarText}; }
   &.active {
-    background: rgba(255, 255, 255, 0.14);
+    background: linear-gradient(90deg, rgba(255, 255, 255, 0.18) 0%, rgba(255, 255, 255, 0.06) 100%);
     color: #fff;
     font-weight: 600;
-    box-shadow: inset 3px 0 0 ${(p) => p.theme.cores.accent};
+    box-shadow: inset 3px 0 0 ${(p) => p.theme.cores.accent}, 0 4px 14px rgba(0, 0, 0, 0.18);
   }
   @media (max-width: 860px) { justify-content: center; }
 `;

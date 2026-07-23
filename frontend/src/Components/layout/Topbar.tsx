@@ -24,6 +24,7 @@ const Bar = styled.header`
   position: sticky;
   top: 0;
   z-index: 20;
+  box-shadow: 0 2px 14px rgba(11, 45, 110, 0.05);
   @media (max-width: 640px) {
     padding: 0 12px;
   }

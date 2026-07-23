@@ -7,7 +7,11 @@ export const GlobalStyle = createGlobalStyle`
 
   body {
     margin: 0;
-    background: ${(p) => p.theme.cores.bg};
+    background:
+      radial-gradient(1100px 620px at 100% -8%, ${(p) => p.theme.cores.accentSoft} 0%, transparent 46%),
+      radial-gradient(900px 520px at 0% 108%, ${(p) => p.theme.cores.accentSoft} 0%, transparent 44%),
+      ${(p) => p.theme.cores.bg};
+    background-attachment: fixed;
     color: ${(p) => p.theme.cores.text};
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
     font-size: 14px;
