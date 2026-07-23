@@ -3,6 +3,7 @@ import { useLocation } from "react-router-dom";
 import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { ThemeToggle } from "../ui/ThemeToggle.js";
 import { Notificacoes } from "./Notificacoes.js";
+import { UsuarioAvatar } from "./UsuarioAvatar.js";
 
 const TITULOS: Record<string, string> = {
   "/": "Visão geral",
@@ -87,6 +88,7 @@ export function Topbar({ colapsada, onToggle }: { colapsada: boolean; onToggle: 
       <Dir>
         <Notificacoes />
         <ThemeToggle />
+        <UsuarioAvatar />
       </Dir>
     </Bar>
   );
