@@ -2,6 +2,7 @@ import { NavLink } from "react-router-dom";
 import styled from "styled-components";
 import { LayoutDashboard, ClipboardList, Users, ScrollText, type LucideIcon } from "lucide-react";
 import { Logo } from "../ui/Logo.js";
+import { useAuth } from "../../App/auth/useAuth.js";
 
 interface ItemNav {
   to: string;
@@ -25,6 +26,13 @@ const NAV: { grupo: string; itens: ItemNav[] }[] = [
     ],
   },
 ];
+
+function iniciais(nome: string): string {
+  const partes = nome.trim().split(/\s+/).filter(Boolean);
+  const a = partes[0]?.[0] ?? "";
+  const b = partes.length > 1 ? partes[partes.length - 1][0] : "";
+  return (a + b).toUpperCase() || "?";
+}
 
 const Aside = styled.nav`
   background: ${(p) => p.theme.cores.sidebar};
@@ -100,7 +108,81 @@ const Item = styled(NavLink)`
   &.active { background: ${(p) => p.theme.cores.sidebarActive}; color: #fff; font-weight: 600; }
 `;
 
+const Rodape = styled.div`
+  margin-top: auto;
+  padding-top: 14px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  @media (max-width: 860px) {
+    margin-top: 0;
+    padding-top: 0;
+    border-top: none;
+    border-left: 1px solid rgba(255, 255, 255, 0.12);
+    padding-left: 12px;
+    flex-shrink: 0;
+  }
+`;
+
+const Bolinha = styled.div`
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: ${(p) => p.theme.cores.accent};
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  img { width: 100%; height: 100%; object-fit: cover; }
+`;
+
+const Info = styled.div`
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+  min-width: 0;
+  flex: 1;
+  @media (max-width: 640px) { display: none; }
+`;
+
+const Nome = styled.span`
+  font-size: 13px;
+  font-weight: 600;
+  color: ${(p) => p.theme.cores.sidebarText};
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+`;
+
+const Papel = styled.span`
+  font-size: 11px;
+  color: ${(p) => p.theme.cores.sidebarMuted};
+`;
+
+const Sair = styled.button`
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  text-align: left;
+  font-size: 11px;
+  font-weight: 600;
+  color: ${(p) => p.theme.cores.sidebarMuted};
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  transition: color 0.15s ease;
+  &:hover { color: #fff; }
+`;
+
 export function Sidebar() {
+  const { usuario, sair } = useAuth();
+
   return (
     <Aside aria-label="navegação principal">
       <Marca>
@@ -119,6 +201,16 @@ export function Sidebar() {
           </div>
         ))}
       </Grupos>
+      {usuario && (
+        <Rodape>
+          <Bolinha>{usuario.foto ? <img src={usuario.foto} alt={usuario.nome} /> : iniciais(usuario.nome)}</Bolinha>
+          <Info>
+            <Nome>{usuario.nome}</Nome>
+            <Papel>{usuario.papel}</Papel>
+          </Info>
+          <Sair type="button" onClick={sair}>Sair</Sair>
+        </Rodape>
+      )}
     </Aside>
   );
 }
