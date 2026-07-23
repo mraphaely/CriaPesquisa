@@ -36,8 +36,19 @@ const Aside = styled.nav<{ $colapsada: boolean }>`
   flex-direction: column;
   padding: 18px 12px;
   transition: width 0.18s ease;
+  /* Fixa a navbar no viewport: o usuário no rodapé fica sempre visível,
+     sem precisar rolar a página (o conteúdo à direita rola normalmente). */
+  position: sticky;
+  top: 0;
+  align-self: flex-start;
+  height: 100vh;
+  overflow: hidden;
 
   @media (max-width: 860px) {
+    position: static;
+    align-self: auto;
+    height: auto;
+    overflow: visible;
     width: 100%;
     flex-direction: row;
     align-items: center;
