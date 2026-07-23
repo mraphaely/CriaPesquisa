@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import styled from "styled-components";
-import { LogOut, ChevronUp } from "lucide-react";
+import { LogOut } from "lucide-react";
 import { useAuth } from "../../App/auth/useAuth.js";
 import { Tag } from "../../Styles/ui.js";
 
@@ -12,96 +12,30 @@ function iniciais(nome: string): string {
   return (a + b).toUpperCase() || "?";
 }
 
-interface Pos {
-  left: number;
-  width: number;
-  top?: number;
-  bottom?: number;
-}
-
-const Wrap = styled.div`
-  margin-top: auto;
-  padding-top: 14px;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
-
-  @media (max-width: 860px) {
-    margin-top: 0;
-    padding-top: 0;
-    border-top: none;
-    border-left: 1px solid rgba(255, 255, 255, 0.12);
-    padding-left: 12px;
-    flex-shrink: 0;
-  }
-`;
-
-const Trigger = styled.button<{ $colapsada: boolean }>`
-  display: flex;
-  align-items: center;
-  justify-content: ${(p) => (p.$colapsada ? "center" : "flex-start")};
-  gap: 10px;
-  width: 100%;
-  background: none;
+const Avatar = styled.button`
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
   border: none;
   cursor: pointer;
-  padding: 8px;
-  border-radius: 10px;
-  text-align: left;
-  color: ${(p) => p.theme.cores.sidebarText};
-  transition: background 0.15s ease;
-  &:hover { background: rgba(255, 255, 255, 0.08); }
-`;
-
-const Bolinha = styled.div`
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
   flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  background: ${(p) => p.theme.cores.accent};
+  background: ${(p) => p.theme.cores.primary};
   color: #fff;
   font-size: 13px;
   font-weight: 700;
+  transition: filter 0.15s ease;
+  &:hover { filter: brightness(1.08); }
   img { width: 100%; height: 100%; object-fit: cover; }
-`;
-
-const Info = styled.div<{ $colapsada: boolean }>`
-  display: flex;
-  flex-direction: column;
-  line-height: 1.2;
-  min-width: 0;
-  flex: 1;
-  ${(p) => (p.$colapsada ? "display:none;" : "")}
-  @media (max-width: 860px) { display: none; }
-`;
-
-const Nome = styled.span`
-  font-size: 13px;
-  font-weight: 600;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-`;
-
-const Papel = styled.span`
-  font-size: 11px;
-  color: ${(p) => p.theme.cores.sidebarMuted};
-`;
-
-const Seta = styled(ChevronUp)<{ $aberto: boolean; $colapsada: boolean }>`
-  flex-shrink: 0;
-  color: ${(p) => p.theme.cores.sidebarMuted};
-  transition: transform 0.15s ease;
-  transform: rotate(${(p) => (p.$aberto ? "0deg" : "180deg")});
-  ${(p) => (p.$colapsada ? "display:none;" : "")}
-  @media (max-width: 860px) { display: none; }
 `;
 
 const Menu = styled.div`
   position: fixed;
   z-index: 1000;
+  min-width: 240px;
   background: ${(p) => p.theme.cores.surface};
   color: ${(p) => p.theme.cores.text};
   border: 1px solid ${(p) => p.theme.cores.border};
@@ -146,10 +80,10 @@ const Opcao = styled.button`
   &:hover { background: ${(p) => p.theme.cores.surfaceAlt}; }
 `;
 
-export function UsuarioMenu({ colapsada = false }: { colapsada?: boolean }) {
+export function UsuarioMenu() {
   const { usuario, sair } = useAuth();
   const [aberto, setAberto] = useState(false);
-  const [pos, setPos] = useState<Pos | null>(null);
+  const [pos, setPos] = useState<{ top: number; left: number; width: number } | null>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -157,13 +91,8 @@ export function UsuarioMenu({ colapsada = false }: { colapsada?: boolean }) {
     const el = triggerRef.current;
     if (!el) return;
     const r = el.getBoundingClientRect();
-    const largura = Math.max(r.width, 230);
-    const paraCima = r.top > window.innerHeight / 2;
-    setPos({
-      left: Math.max(8, Math.min(r.left, window.innerWidth - largura - 8)),
-      width: largura,
-      ...(paraCima ? { bottom: window.innerHeight - r.top + 8 } : { top: r.bottom + 8 }),
-    });
+    const width = 240;
+    setPos({ top: r.bottom + 8, left: Math.max(8, r.right - width), width });
     setAberto(true);
   }
 
@@ -171,8 +100,7 @@ export function UsuarioMenu({ colapsada = false }: { colapsada?: boolean }) {
     if (!aberto) return;
     function onClickFora(e: MouseEvent) {
       const alvo = e.target as Node;
-      if (triggerRef.current?.contains(alvo)) return;
-      if (menuRef.current?.contains(alvo)) return;
+      if (triggerRef.current?.contains(alvo) || menuRef.current?.contains(alvo)) return;
       setAberto(false);
     }
     function onEsc(e: KeyboardEvent) {
@@ -194,31 +122,22 @@ export function UsuarioMenu({ colapsada = false }: { colapsada?: boolean }) {
   if (!usuario) return null;
 
   return (
-    <Wrap>
-      <Trigger
+    <>
+      <Avatar
         ref={triggerRef}
         type="button"
         onClick={() => (aberto ? setAberto(false) : abrir())}
         aria-haspopup="menu"
         aria-expanded={aberto}
-        $colapsada={colapsada}
+        title={usuario.nome}
       >
-        <Bolinha>{usuario.foto ? <img src={usuario.foto} alt={usuario.nome} /> : iniciais(usuario.nome)}</Bolinha>
-        <Info $colapsada={colapsada}>
-          <Nome>{usuario.nome}</Nome>
-          <Papel>{usuario.papel}</Papel>
-        </Info>
-        <Seta size={16} $aberto={aberto} $colapsada={colapsada} />
-      </Trigger>
+        {usuario.foto ? <img src={usuario.foto} alt={usuario.nome} /> : iniciais(usuario.nome)}
+      </Avatar>
 
       {aberto &&
         pos &&
         createPortal(
-          <Menu
-            ref={menuRef}
-            role="menu"
-            style={{ left: pos.left, width: pos.width, top: pos.top, bottom: pos.bottom }}
-          >
+          <Menu ref={menuRef} role="menu" style={{ top: pos.top, left: pos.left, width: pos.width }}>
             <Cabecalho>
               <CabNome>{usuario.nome}</CabNome>
               <CabEmail>{usuario.email}</CabEmail>
@@ -231,6 +150,6 @@ export function UsuarioMenu({ colapsada = false }: { colapsada?: boolean }) {
           </Menu>,
           document.body,
         )}
-    </Wrap>
+    </>
   );
 }
