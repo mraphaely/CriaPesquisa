@@ -4,7 +4,9 @@ import { ProtectedRoute } from "./auth/ProtectedRoute.js";
 import { Login } from "./pages/Login.js";
 import { Dashboard } from "./pages/Dashboard.js";
 import { Pesquisas } from "./pages/Pesquisas.js";
+import { NovaPesquisa } from "./pages/NovaPesquisa.js";
 import { Usuarios } from "./pages/Usuarios.js";
+import { NovoUsuario } from "./pages/NovoUsuario.js";
 import { Logs } from "./pages/Logs.js";
 
 export const router = createBrowserRouter([
@@ -17,6 +19,7 @@ export const router = createBrowserRouter([
         children: [
           { path: "/", element: <Dashboard /> },
           { path: "/pesquisas", element: <Pesquisas /> },
+          { path: "/pesquisas/nova", element: <NovaPesquisa /> },
         ],
       },
     ],
@@ -28,6 +31,7 @@ export const router = createBrowserRouter([
         element: <Layout />,
         children: [
           { path: "/usuarios", element: <Usuarios /> },
+          { path: "/usuarios/novo", element: <NovoUsuario /> },
           { path: "/logs", element: <Logs /> },
         ],
       },

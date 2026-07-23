@@ -97,7 +97,7 @@ export function Dashboard() {
           <PageTitle>Dashboard</PageTitle>
           <PageSubtitle>Visão geral · Cartão CRIA — Primeira Infância de Alagoas</PageSubtitle>
         </div>
-        <Button onClick={() => navigate("/pesquisas")}>
+        <Button onClick={() => navigate("/pesquisas/nova")}>
           <Plus size={16} />
           Nova pesquisa
         </Button>
