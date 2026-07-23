@@ -1,6 +1,6 @@
 import { NavLink } from "react-router-dom";
 import styled from "styled-components";
-import { LayoutDashboard, ClipboardList, Users, ScrollText, HelpCircle, type LucideIcon } from "lucide-react";
+import { LayoutDashboard, ClipboardList, Users, ScrollText, type LucideIcon } from "lucide-react";
 import { Logo } from "../ui/Logo.js";
 import { UsuarioCard } from "./UsuarioCard.js";
 
@@ -157,17 +157,6 @@ const Rodape = styled.div<{ $colapsada: boolean }>`
   }
 `;
 
-const Ajuda = styled.button<{ $colapsada: boolean }>`
-  ${linkBase}
-  width: 100%;
-  border: none;
-  background: transparent;
-  color: ${(p) => p.theme.cores.sidebarMuted};
-  justify-content: ${(p) => (p.$colapsada ? "center" : "flex-start")};
-  &:hover { background: rgba(255, 255, 255, 0.08); color: ${(p) => p.theme.cores.sidebarText}; }
-  @media (max-width: 860px) { justify-content: center; width: auto; }
-`;
-
 export function Sidebar({ colapsada }: { colapsada: boolean }) {
   return (
     <Aside aria-label="navegação principal" $colapsada={colapsada}>
@@ -189,10 +178,6 @@ export function Sidebar({ colapsada }: { colapsada: boolean }) {
         ))}
       </Grupos>
       <Rodape $colapsada={colapsada}>
-        <Ajuda type="button" $colapsada={colapsada} title="Ajuda">
-          <HelpCircle size={19} />
-          <Rotulo $colapsada={colapsada}>Ajuda</Rotulo>
-        </Ajuda>
         <UsuarioCard colapsada={colapsada} />
       </Rodape>
     </Aside>
