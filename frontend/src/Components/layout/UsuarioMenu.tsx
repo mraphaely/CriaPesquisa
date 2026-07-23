@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import styled from "styled-components";
 import { LogOut, ChevronUp } from "lucide-react";
 import { useAuth } from "../../App/auth/useAuth.js";
@@ -11,8 +12,14 @@ function iniciais(nome: string): string {
   return (a + b).toUpperCase() || "?";
 }
 
+interface Pos {
+  left: number;
+  width: number;
+  top?: number;
+  bottom?: number;
+}
+
 const Wrap = styled.div`
-  position: relative;
   margin-top: auto;
   padding-top: 14px;
   border-top: 1px solid rgba(255, 255, 255, 0.1);
@@ -90,22 +97,14 @@ const Seta = styled(ChevronUp)<{ $aberto: boolean }>`
 `;
 
 const Menu = styled.div`
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: calc(100% + 8px);
+  position: fixed;
+  z-index: 1000;
   background: ${(p) => p.theme.cores.surface};
   color: ${(p) => p.theme.cores.text};
   border: 1px solid ${(p) => p.theme.cores.border};
   border-radius: 12px;
   box-shadow: ${(p) => p.theme.cores.shadow};
   padding: 8px;
-  z-index: 60;
-
-  @media (min-width: 861px) {
-    top: auto;
-    bottom: calc(100% + 8px);
-  }
 `;
 
 const Cabecalho = styled.div`
@@ -147,29 +146,59 @@ const Opcao = styled.button`
 export function UsuarioMenu() {
   const { usuario, sair } = useAuth();
   const [aberto, setAberto] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
+  const [pos, setPos] = useState<Pos | null>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  function abrir() {
+    const el = triggerRef.current;
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    const largura = Math.max(r.width, 230);
+    const paraCima = r.top > window.innerHeight / 2;
+    setPos({
+      left: Math.max(8, Math.min(r.left, window.innerWidth - largura - 8)),
+      width: largura,
+      ...(paraCima ? { bottom: window.innerHeight - r.top + 8 } : { top: r.bottom + 8 }),
+    });
+    setAberto(true);
+  }
 
   useEffect(() => {
     if (!aberto) return;
     function onClickFora(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) setAberto(false);
+      const alvo = e.target as Node;
+      if (triggerRef.current?.contains(alvo)) return;
+      if (menuRef.current?.contains(alvo)) return;
+      setAberto(false);
     }
     function onEsc(e: KeyboardEvent) {
       if (e.key === "Escape") setAberto(false);
     }
+    function fechar() {
+      setAberto(false);
+    }
     document.addEventListener("mousedown", onClickFora);
     document.addEventListener("keydown", onEsc);
+    window.addEventListener("resize", fechar);
     return () => {
       document.removeEventListener("mousedown", onClickFora);
       document.removeEventListener("keydown", onEsc);
+      window.removeEventListener("resize", fechar);
     };
   }, [aberto]);
 
   if (!usuario) return null;
 
   return (
-    <Wrap ref={ref}>
-      <Trigger type="button" onClick={() => setAberto((v) => !v)} aria-haspopup="menu" aria-expanded={aberto}>
+    <Wrap>
+      <Trigger
+        ref={triggerRef}
+        type="button"
+        onClick={() => (aberto ? setAberto(false) : abrir())}
+        aria-haspopup="menu"
+        aria-expanded={aberto}
+      >
         <Bolinha>{usuario.foto ? <img src={usuario.foto} alt={usuario.nome} /> : iniciais(usuario.nome)}</Bolinha>
         <Info>
           <Nome>{usuario.nome}</Nome>
@@ -178,19 +207,26 @@ export function UsuarioMenu() {
         <Seta size={16} $aberto={aberto} />
       </Trigger>
 
-      {aberto && (
-        <Menu role="menu">
-          <Cabecalho>
-            <CabNome>{usuario.nome}</CabNome>
-            <CabEmail>{usuario.email}</CabEmail>
-            <Tag $tone="blue">{usuario.papel}</Tag>
-          </Cabecalho>
-          <Opcao type="button" role="menuitem" onClick={sair}>
-            <LogOut size={16} />
-            Sair
-          </Opcao>
-        </Menu>
-      )}
+      {aberto &&
+        pos &&
+        createPortal(
+          <Menu
+            ref={menuRef}
+            role="menu"
+            style={{ left: pos.left, width: pos.width, top: pos.top, bottom: pos.bottom }}
+          >
+            <Cabecalho>
+              <CabNome>{usuario.nome}</CabNome>
+              <CabEmail>{usuario.email}</CabEmail>
+              <Tag $tone="blue">{usuario.papel}</Tag>
+            </Cabecalho>
+            <Opcao type="button" role="menuitem" onClick={sair}>
+              <LogOut size={16} />
+              Sair
+            </Opcao>
+          </Menu>,
+          document.body,
+        )}
     </Wrap>
   );
 }
