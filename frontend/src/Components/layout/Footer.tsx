@@ -14,6 +14,7 @@ const Rodape = styled.footer`
 `;
 
 const ImgFooter = styled.img`
+  height: 44px;
   width: auto;
   max-width: 100%;
   object-fit: contain;
@@ -38,7 +39,7 @@ export function Footer() {
 
   return (
     <Rodape>
-      <ImgFooter src={src} alt="CRIA — Primeira Infância de Alagoas" style={{ height: t.modo === "escuro" ? 38 : 44 }} />
+      <ImgFooter src={src} alt="CRIA — Primeira Infância de Alagoas" />
       <Copyright>
         © {ano} <Nome>CriaPesquisa</Nome> — Todos os direitos reservados.
         <br />
