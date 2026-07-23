@@ -7,8 +7,8 @@ import { useAuth } from "../auth/useAuth.js";
 import { Logo } from "../../Components/ui/Logo.js";
 import { Button, Field, Label, TextInput, Muted, Banner } from "../../Styles/ui.js";
 
-// Padrão de fundo (estrelas, luas, corações e brilhos) — vetorial, sutil e
-// tematizável. "Quase transparente, mas visível".
+// Padrão de fundo (estrelas, luas, corações, brilhos, carinhas e rabiscos) —
+// vetorial, sutil e tematizável. "Quase transparente, mas visível".
 const estrela = (x: number, y: number, s: number, r: number) =>
   `<path transform='translate(${x} ${y}) scale(${s}) rotate(${r})' d='M0 -10 L2.9 -3.1 L10 -2.4 L4.5 2.5 L6.2 9.5 L0 5.8 L-6.2 9.5 L-4.5 2.5 L-10 -2.4 L-2.9 -3.1 Z'/>`;
 const brilho = (x: number, y: number, s: number) =>
@@ -17,15 +17,25 @@ const coracao = (x: number, y: number, s: number) =>
   `<path transform='translate(${x} ${y}) scale(${s})' d='M0 6 C0 6 -8 1 -8 -4 C-8 -7 -5.5 -8.5 -3 -8.5 C-1.5 -8.5 0 -7.5 0 -6 C0 -7.5 1.5 -8.5 3 -8.5 C5.5 -8.5 8 -7 8 -4 C8 1 0 6 0 6 Z'/>`;
 const lua = (x: number, y: number, s: number) =>
   `<path transform='translate(${x} ${y}) scale(${s})' d='M6 -8 A8 8 0 1 0 6 8 A6 6 0 1 1 6 -8 Z'/>`;
+const carinha = (x: number, y: number, s: number, cor: string, op: number) =>
+  `<g transform='translate(${x} ${y}) scale(${s})'>` +
+  `<circle r='9' fill='none' stroke='${cor}' stroke-opacity='${op}' stroke-width='1.5'/>` +
+  `<path d='M-4.5 2.5 Q0 7 4.5 2.5' fill='none' stroke='${cor}' stroke-opacity='${op}' stroke-width='1.5' stroke-linecap='round'/>` +
+  `<circle cx='-3.4' cy='-2.4' r='1.4'/><circle cx='3.4' cy='-2.4' r='1.4'/></g>`;
+const rabisco = (x: number, y: number, s: number, cor: string, op: number) =>
+  `<path transform='translate(${x} ${y}) scale(${s})' fill='none' stroke='${cor}' stroke-opacity='${op}' stroke-width='1.5' stroke-linecap='round' d='M-7 2 A4 4 0 1 1 -1 5 A7 7 0 1 0 8 -2'/>`;
 
 function fundoPadrao(cor: string, opacidade: number): string {
   const formas = [
-    estrela(24, 28, 1, 12), estrela(120, 46, 0.7, -14), estrela(172, 110, 1.1, 22),
-    estrela(72, 150, 0.85, 4), estrela(32, 120, 0.6, 30), estrela(150, 176, 0.75, -8),
-    brilho(92, 92, 1), brilho(184, 30, 0.8), brilho(12, 88, 0.7), brilho(120, 130, 0.7),
-    coracao(58, 56, 0.85), coracao(186, 66, 0.6), coracao(96, 186, 0.7),
-    lua(150, 22, 1), lua(40, 182, 0.85),
-    "<circle cx='96' cy='24' r='2'/><circle cx='188' cy='150' r='2.2'/><circle cx='14' cy='156' r='1.8'/><circle cx='66' cy='104' r='1.6'/>",
+    estrela(22, 26, 1, 12), estrela(118, 44, 0.7, -14), estrela(176, 108, 1.05, 22),
+    estrela(74, 150, 0.85, 4), estrela(30, 118, 0.6, 30), estrela(148, 178, 0.75, -8),
+    brilho(92, 92, 1), brilho(186, 28, 0.8), brilho(12, 86, 0.7), brilho(122, 132, 0.7),
+    coracao(56, 54, 0.85), coracao(190, 66, 0.6), coracao(98, 188, 0.7), coracao(160, 150, 0.6),
+    lua(150, 20, 1), lua(40, 182, 0.85), lua(196, 120, 0.7),
+    carinha(104, 68, 1, cor, opacidade), carinha(28, 174, 0.8, cor, opacidade),
+    carinha(184, 158, 0.9, cor, opacidade), carinha(66, 20, 0.72, cor, opacidade),
+    rabisco(150, 108, 0.9, cor, opacidade), rabisco(14, 52, 0.8, cor, opacidade),
+    "<circle cx='96' cy='22' r='2'/><circle cx='120' cy='176' r='2.2'/><circle cx='14' cy='150' r='1.8'/><circle cx='70' cy='104' r='1.6'/><circle cx='196' cy='188' r='1.8'/>",
   ].join("");
   const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='210' height='210' viewBox='0 0 210 210'><g fill='${cor}' fill-opacity='${opacidade}'>${formas}</g></svg>`;
   return `url("data:image/svg+xml,${encodeURIComponent(svg)}")`;
