@@ -25,6 +25,7 @@ export interface Campo {
   escala?: { min: number; max: number };
   grade?: { linhas: string[]; colunas: string[] };
   full?: boolean; // força ocupar a linha inteira (ex.: nome completo)
+  novaLinha?: boolean; // força começar numa nova linha da grade (coluna 1)
 }
 
 export interface Secao {
@@ -144,7 +145,7 @@ export const PESQUISA_CRIANCA: PesquisaDemo = {
         { n: 45, enunciado: "Carteira de vacinação da criança atualizada", tipo: "grade", grade: { linhas: ANTES_APOS, colunas: ["Sim", "Não", "Não soube informar"] } },
         { n: 46, enunciado: "Número de consultas de puericultura no último ano", tipo: "numero" },
         { n: 47, enunciado: "A família tem dificuldade de levar a criança às consultas na UBS?", tipo: "unica", outro: true, opcoes: ["Não", "Sim, transporte", "Sim, falta de vaga", "Sim, trabalho/cuidado com outros filhos", "Sim, distância"] },
-        { n: 48, enunciado: "A criança recebeu suplementação de ferro nos últimos 12 meses? (6 meses a 1 ano e 11 meses)", tipo: "unica", opcoes: ["Sim, no último ano", "Sim, nos últimos 6 meses", "Não", "Não sabe", "Sim, em tratamento (acima de 1 ano e 11 meses)"] },
+        { n: 48, enunciado: "A criança recebeu suplementação de ferro nos últimos 12 meses? (6 meses a 1 ano e 11 meses)", tipo: "unica", novaLinha: true, opcoes: ["Sim, no último ano", "Sim, nos últimos 6 meses", "Não", "Não sabe", "Sim, em tratamento (acima de 1 ano e 11 meses)"] },
         { n: 49, enunciado: "A criança recebeu vitamina A no último ano? (6 meses a 4 anos e 11 meses)", tipo: "unica", opcoes: ["Sim, no último ano", "Sim, nos últimos 6 meses", "Não", "Não sabe", "Não se aplica (maior que 5 anos)"] },
       ],
     },

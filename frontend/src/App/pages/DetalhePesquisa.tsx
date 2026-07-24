@@ -15,10 +15,6 @@ import {
   Select,
   Muted,
   Banner,
-  TableWrap,
-  Tabela,
-  Th,
-  Td,
 } from "../../Styles/ui.js";
 
 type Valor = string | string[] | Record<string, string> | undefined;
@@ -108,8 +104,8 @@ const Grade = styled.div`
   }
 `;
 
-const Bloco = styled.div<{ $full?: boolean }>`
-  grid-column: ${(p) => (p.$full ? "1 / -1" : "auto")};
+const Bloco = styled.div<{ $full?: boolean; $novaLinha?: boolean }>`
+  grid-column: ${(p) => (p.$full ? "1 / -1" : p.$novaLinha ? "1" : "auto")};
   min-width: 0; /* permite o item do grid encolher (evita overflow por conteúdo longo) */
   padding: 16px 0;
   border-top: 1px solid ${(p) => p.theme.cores.border};
@@ -213,6 +209,24 @@ const Pill = styled.button<{ $ativa: boolean }>`
   color: ${(p) => (p.$ativa ? "#fff" : p.theme.cores.text)};
   transition: background 0.12s ease, border-color 0.12s ease, color 0.12s ease;
   &:hover { border-color: ${(p) => p.theme.cores.accent}; }
+`;
+
+const GradeCampos = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+`;
+
+const GradeLinha = styled.div`
+  padding: 10px 0;
+  & + & { border-top: 1px dashed ${(p) => p.theme.cores.border}; }
+`;
+
+const GradeLabel = styled.div`
+  font-size: 12.5px;
+  font-weight: 700;
+  color: ${(p) => p.theme.cores.textMuted};
+  margin-bottom: 8px;
 `;
 
 const Acoes = styled.div`
@@ -435,7 +449,7 @@ export function DetalhePesquisa() {
               <SecaoBarra />
               <Grade>
                 {sec.campos.map((c) => (
-                  <Bloco key={c.n} $full={!ehPequeno(c)}>
+                  <Bloco key={c.n} $full={!ehPequeno(c)} $novaLinha={c.novaLinha}>
                     <EnunciadoLinha>
                       <NumBadge>{c.n}</NumBadge>
                       <Enunciado>
@@ -482,9 +496,9 @@ export function DetalhePesquisa() {
     const v = respostas[c.n];
     switch (c.tipo) {
       case "texto":
-        return <TextInput value={(v as string) ?? ""} onChange={(e) => set(c.n, e.target.value)} placeholder="Sua resposta" />;
+        return <TextInput value={(v as string) ?? ""} onChange={(e) => set(c.n, e.target.value)} placeholder="Sua resposta" style={{ width: "100%" }} />;
       case "paragrafo":
-        return <Textarea value={(v as string) ?? ""} onChange={(e) => set(c.n, e.target.value)} placeholder="Sua resposta" />;
+        return <Textarea value={(v as string) ?? ""} onChange={(e) => set(c.n, e.target.value)} placeholder="Sua resposta" style={{ width: "100%" }} />;
       case "numero":
         return <TextInput type="number" value={(v as string) ?? ""} onChange={(e) => set(c.n, e.target.value)} style={{ maxWidth: 220 }} />;
       case "data":
@@ -552,35 +566,25 @@ export function DetalhePesquisa() {
         const g = c.grade!;
         const atual = (v as Record<string, string> | undefined) ?? {};
         return (
-          <TableWrap>
-            <Tabela>
-              <thead>
-                <tr>
-                  <Th></Th>
+          <GradeCampos>
+            {g.linhas.map((lin) => (
+              <GradeLinha key={lin}>
+                <GradeLabel>{lin}</GradeLabel>
+                <Pills>
                   {g.colunas.map((col) => (
-                    <Th key={col} style={{ textAlign: "center" }}>{col}</Th>
+                    <Pill
+                      key={col}
+                      type="button"
+                      $ativa={atual[lin] === col}
+                      onClick={() => set(c.n, { ...atual, [lin]: col })}
+                    >
+                      {col}
+                    </Pill>
                   ))}
-                </tr>
-              </thead>
-              <tbody>
-                {g.linhas.map((lin) => (
-                  <tr key={lin}>
-                    <Td style={{ fontWeight: 600 }}>{lin}</Td>
-                    {g.colunas.map((col) => (
-                      <Td key={col} style={{ textAlign: "center" }}>
-                        <input
-                          type="radio"
-                          name={`q${c.n}-${lin}`}
-                          checked={atual[lin] === col}
-                          onChange={() => set(c.n, { ...atual, [lin]: col })}
-                        />
-                      </Td>
-                    ))}
-                  </tr>
-                ))}
-              </tbody>
-            </Tabela>
-          </TableWrap>
+                </Pills>
+              </GradeLinha>
+            ))}
+          </GradeCampos>
         );
       }
       default:
