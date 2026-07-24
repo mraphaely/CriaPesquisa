@@ -1,7 +1,7 @@
 import { useMemo, useState, type FormEvent } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import styled from "styled-components";
-import { ArrowLeft, ArrowRight, Send, CheckCircle2, Search, ListChecks } from "lucide-react";
+import { ArrowLeft, ArrowRight, Send, CheckCircle2, Check, Search, ListChecks } from "lucide-react";
 import { PESQUISAS_DEMO, totalPerguntas, type Campo, type Secao } from "../data/pesquisaCrianca.js";
 import {
   PageHeader,
@@ -156,15 +156,24 @@ const CampoBox = styled.div`
   margin-left: 34px;
 `;
 
-const Opcao = styled.label`
-  display: flex;
+const OpcaoCheck = styled.label<{ $ativa: boolean }>`
+  display: inline-flex;
   align-items: center;
-  gap: 9px;
-  font-size: 13px;
-  color: ${(p) => p.theme.cores.text};
-  padding: 5px 0;
+  gap: 7px;
+  padding: 9px 14px;
+  border-radius: 10px;
   cursor: pointer;
-  input { width: 15px; height: 15px; accent-color: ${(p) => p.theme.cores.primary}; }
+  font-size: 13px;
+  font-weight: 500;
+  border: 1.5px solid ${(p) => (p.$ativa ? "#1756B8" : p.theme.cores.border)};
+  background: ${(p) => (p.$ativa ? "#1756B8" : p.theme.cores.surface)};
+  color: ${(p) => (p.$ativa ? "#ffffff" : p.theme.cores.text)};
+  transition: background 0.12s ease, border-color 0.12s ease, color 0.12s ease;
+  &:hover {
+    border-color: ${(p) => p.theme.cores.accent};
+    background: ${(p) => (p.$ativa ? "#1756B8" : p.theme.cores.accentSoft)};
+  }
+  input { display: none; }
 `;
 
 const Escala = styled.div`
@@ -582,13 +591,19 @@ export function DetalhePesquisa() {
         const opcoes = [...(c.opcoes ?? []), ...(c.outro ? ["Outro…"] : [])];
         return (
           <div>
-            {c.limite && <Ajuda style={{ margin: "0 0 6px" }}>Marcar até {c.limite}</Ajuda>}
-            {opcoes.map((o) => (
-              <Opcao key={o}>
-                <input type="checkbox" checked={sel.includes(o)} onChange={() => toggleMultipla(c, o)} />
-                {o}
-              </Opcao>
-            ))}
+            {c.limite && <Ajuda style={{ margin: "0 0 8px" }}>Marcar até {c.limite}</Ajuda>}
+            <Pills>
+              {opcoes.map((o) => {
+                const ativa = sel.includes(o);
+                return (
+                  <OpcaoCheck key={o} $ativa={ativa}>
+                    <input type="checkbox" checked={ativa} onChange={() => toggleMultipla(c, o)} />
+                    {ativa && <Check size={14} />}
+                    {o}
+                  </OpcaoCheck>
+                );
+              })}
+            </Pills>
           </div>
         );
       }
