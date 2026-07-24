@@ -193,6 +193,27 @@ const Bolha = styled.button<{ $ativa: boolean }>`
   &:hover { border-color: ${(p) => p.theme.cores.accent}; }
 `;
 
+const Pills = styled.div`
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+`;
+
+const Pill = styled.button<{ $ativa: boolean }>`
+  min-width: 96px;
+  padding: 10px 18px;
+  border-radius: 11px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  text-align: center;
+  border: 1.5px solid ${(p) => (p.$ativa ? p.theme.cores.primary : p.theme.cores.border)};
+  background: ${(p) => (p.$ativa ? p.theme.cores.primary : "transparent")};
+  color: ${(p) => (p.$ativa ? "#fff" : p.theme.cores.text)};
+  transition: background 0.12s ease, border-color 0.12s ease, color 0.12s ease;
+  &:hover { border-color: ${(p) => p.theme.cores.accent}; }
+`;
+
 const Acoes = styled.div`
   display: flex;
   gap: 12px;
@@ -488,14 +509,13 @@ export function DetalhePesquisa() {
           );
         }
         return (
-          <div>
+          <Pills>
             {opcoes.map((o) => (
-              <Opcao key={o}>
-                <input type="radio" name={`q${c.n}`} checked={v === o} onChange={() => set(c.n, o)} />
+              <Pill key={o} type="button" $ativa={v === o} onClick={() => set(c.n, o)}>
                 {o}
-              </Opcao>
+              </Pill>
             ))}
-          </div>
+          </Pills>
         );
       }
       case "multipla": {
