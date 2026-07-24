@@ -5,6 +5,7 @@ import { Login } from "./pages/Login.js";
 import { Dashboard } from "./pages/Dashboard.js";
 import { Pesquisas } from "./pages/Pesquisas.js";
 import { NovaPesquisa } from "./pages/NovaPesquisa.js";
+import { DetalhePesquisa } from "./pages/DetalhePesquisa.js";
 import { Usuarios } from "./pages/Usuarios.js";
 import { NovoUsuario } from "./pages/NovoUsuario.js";
 import { Logs } from "./pages/Logs.js";
@@ -20,6 +21,7 @@ export const router = createBrowserRouter([
           { path: "/", element: <Dashboard /> },
           { path: "/pesquisas", element: <Pesquisas /> },
           { path: "/pesquisas/nova", element: <NovaPesquisa /> },
+          { path: "/pesquisas/:id", element: <DetalhePesquisa /> },
         ],
       },
     ],
