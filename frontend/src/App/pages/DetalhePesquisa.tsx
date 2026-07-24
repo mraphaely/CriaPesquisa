@@ -1,6 +1,7 @@
+import { useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import styled from "styled-components";
-import { ArrowLeft, PlayCircle } from "lucide-react";
+import { ArrowLeft, PlayCircle, Search, ListChecks } from "lucide-react";
 import { PESQUISAS_DEMO, totalPerguntas, type Campo } from "../data/pesquisaCrianca.js";
 import {
   PageHeader,
@@ -21,16 +22,48 @@ import {
 
 const Wrap = styled.div`
   width: 100%;
-  max-width: 820px;
+  max-width: 840px;
   margin: 0 auto;
+`;
+
+const Busca = styled.div`
+  position: relative;
+  margin-bottom: 18px;
+  svg {
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: ${(p) => p.theme.cores.textMuted};
+  }
+  input { padding-left: 42px; width: 100%; }
+`;
+
+const SecaoHeader = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 6px;
+`;
+
+const SecIcon = styled.span`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 11px;
+  flex-shrink: 0;
+  background: ${(p) => p.theme.cores.accentSoft};
+  color: ${(p) => p.theme.cores.primary};
 `;
 
 const SecaoTitulo = styled.h2`
   font-family: 'Space Grotesk', sans-serif;
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 700;
   color: ${(p) => p.theme.cores.primaryDark};
-  margin: 0 0 4px;
+  margin: 0;
 `;
 
 const SecaoBarra = styled.div`
@@ -38,20 +71,42 @@ const SecaoBarra = styled.div`
   width: 46px;
   border-radius: 3px;
   background: ${(p) => p.theme.cores.accent};
-  margin-bottom: 16px;
+  margin: 4px 0 16px 48px;
 `;
 
 const Bloco = styled.div`
-  padding: 14px 0;
+  padding: 16px 0;
   border-top: 1px solid ${(p) => p.theme.cores.border};
-  &:first-child { border-top: none; }
+  &:first-of-type { border-top: none; padding-top: 4px; }
+`;
+
+const EnunciadoLinha = styled.div`
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 10px;
+`;
+
+const NumBadge = styled.span`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  height: 24px;
+  padding: 0 6px;
+  border-radius: 7px;
+  flex-shrink: 0;
+  background: ${(p) => p.theme.cores.accentSoft};
+  color: ${(p) => p.theme.cores.primary};
+  font-size: 12px;
+  font-weight: 700;
 `;
 
 const Enunciado = styled.div`
   font-size: 14px;
   font-weight: 600;
   color: ${(p) => p.theme.cores.text};
-  margin-bottom: 4px;
+  line-height: 1.4;
 `;
 
 const Obrig = styled.span`
@@ -62,8 +117,12 @@ const Obrig = styled.span`
 const Ajuda = styled.div`
   font-size: 12px;
   color: ${(p) => p.theme.cores.textMuted};
-  margin-bottom: 10px;
+  margin: 2px 0 10px 34px;
   line-height: 1.5;
+`;
+
+const CampoBox = styled.div`
+  margin-left: 34px;
 `;
 
 const Opcao = styled.label`
@@ -95,6 +154,8 @@ const Bolha = styled.span`
   color: ${(p) => p.theme.cores.textMuted};
 `;
 
+const norm = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+
 function PreviewCampo({ c }: { c: Campo }) {
   switch (c.tipo) {
     case "texto":
@@ -119,7 +180,7 @@ function PreviewCampo({ c }: { c: Campo }) {
       const tipo = c.tipo === "unica" ? "radio" : "checkbox";
       return (
         <div>
-          {c.limite && <Ajuda>Marcar até {c.limite}</Ajuda>}
+          {c.limite && <Ajuda style={{ margin: "0 0 6px" }}>Marcar até {c.limite}</Ajuda>}
           {c.opcoes?.map((o) => (
             <Opcao key={o}>
               <input type={tipo} disabled />
@@ -184,6 +245,19 @@ export function DetalhePesquisa() {
   const { id } = useParams();
   const navigate = useNavigate();
   const pesquisa = PESQUISAS_DEMO.find((p) => p.id === id);
+  const [busca, setBusca] = useState("");
+
+  const total = pesquisa ? totalPerguntas(pesquisa) : 0;
+  const mostrarBusca = total > 10;
+
+  const secoes = useMemo(() => {
+    if (!pesquisa) return [];
+    const q = norm(busca.trim());
+    if (!q) return pesquisa.secoes;
+    return pesquisa.secoes
+      .map((sec) => ({ ...sec, campos: sec.campos.filter((c) => norm(c.enunciado).includes(q)) }))
+      .filter((sec) => sec.campos.length > 0);
+  }, [pesquisa, busca]);
 
   if (!pesquisa) {
     return (
@@ -198,13 +272,15 @@ export function DetalhePesquisa() {
     );
   }
 
+  const totalFiltrado = secoes.reduce((s, sec) => s + sec.campos.length, 0);
+
   return (
     <Wrap>
       <PageHeader>
         <div>
           <PageTitle>{pesquisa.titulo}</PageTitle>
           <PageSubtitle>
-            {pesquisa.descricao} · {totalPerguntas(pesquisa)} perguntas · {pesquisa.secoes.length} seções
+            {pesquisa.descricao} · {total} perguntas · {pesquisa.secoes.length} seções
           </PageSubtitle>
           <div style={{ marginTop: 8, display: "flex", gap: 8 }}>
             <Tag $tone="green">{pesquisa.status}</Tag>
@@ -215,28 +291,62 @@ export function DetalhePesquisa() {
           <Button $variant="ghost" onClick={() => navigate("/pesquisas")}>
             <ArrowLeft size={16} /> Voltar
           </Button>
-          <Button>
+          <Button onClick={() => navigate(`/pesquisas/${pesquisa.id}/responder`)}>
             <PlayCircle size={16} /> Responder
           </Button>
         </div>
       </PageHeader>
 
-      {pesquisa.secoes.map((sec) => (
-        <Card key={sec.titulo} style={{ marginBottom: 16 }}>
-          <SecaoTitulo>{sec.titulo}</SecaoTitulo>
-          <SecaoBarra />
-          {sec.campos.map((c) => (
-            <Bloco key={c.n}>
-              <Enunciado>
-                {c.n}. {c.enunciado}
-                {c.obrigatoria && <Obrig>*</Obrig>}
-              </Enunciado>
-              {c.ajuda && <Ajuda>{c.ajuda}</Ajuda>}
-              <PreviewCampo c={c} />
-            </Bloco>
-          ))}
+      {mostrarBusca && (
+        <Busca>
+          <Search size={17} />
+          <TextInput
+            value={busca}
+            onChange={(e) => setBusca(e.target.value)}
+            placeholder={`Pesquisar entre as ${total} perguntas…`}
+            aria-label="pesquisar perguntas"
+          />
+        </Busca>
+      )}
+
+      {busca && (
+        <Muted style={{ marginBottom: 12 }}>
+          {totalFiltrado} resultado{totalFiltrado === 1 ? "" : "s"} para “{busca}”.
+        </Muted>
+      )}
+
+      {secoes.length === 0 ? (
+        <Card>
+          <Muted style={{ textAlign: "center" }}>Nenhuma pergunta encontrada para “{busca}”.</Muted>
         </Card>
-      ))}
+      ) : (
+        secoes.map((sec) => (
+          <Card key={sec.titulo} style={{ marginBottom: 16 }}>
+            <SecaoHeader>
+              <SecIcon>
+                <ListChecks size={19} />
+              </SecIcon>
+              <SecaoTitulo>{sec.titulo}</SecaoTitulo>
+            </SecaoHeader>
+            <SecaoBarra />
+            {sec.campos.map((c) => (
+              <Bloco key={c.n}>
+                <EnunciadoLinha>
+                  <NumBadge>{c.n}</NumBadge>
+                  <Enunciado>
+                    {c.enunciado}
+                    {c.obrigatoria && <Obrig>*</Obrig>}
+                  </Enunciado>
+                </EnunciadoLinha>
+                {c.ajuda && <Ajuda>{c.ajuda}</Ajuda>}
+                <CampoBox>
+                  <PreviewCampo c={c} />
+                </CampoBox>
+              </Bloco>
+            ))}
+          </Card>
+        ))
+      )}
 
       <Muted style={{ textAlign: "center", marginBottom: 8 }}>
         Pré-visualização do formulário. A coleta de respostas fica disponível com o backend conectado.
