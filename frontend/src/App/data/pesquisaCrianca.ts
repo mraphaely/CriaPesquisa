@@ -24,6 +24,7 @@ export interface Campo {
   limite?: number;
   escala?: { min: number; max: number };
   grade?: { linhas: string[]; colunas: string[] };
+  full?: boolean; // força ocupar a linha inteira (ex.: nome completo)
 }
 
 export interface Secao {
@@ -52,7 +53,7 @@ export const PESQUISA_CRIANCA: PesquisaDemo = {
     {
       titulo: "Identificação e perfil sociodemográfico",
       campos: [
-        { n: 1, enunciado: "Nome completo do(a) entrevistado(a)", tipo: "texto", obrigatoria: true },
+        { n: 1, enunciado: "Nome completo do(a) entrevistado(a)", tipo: "texto", obrigatoria: true, full: true },
         { n: 2, enunciado: "CPF", tipo: "texto", obrigatoria: true },
         { n: 3, enunciado: "NIS", tipo: "texto" },
         { n: 4, enunciado: "Zona", tipo: "unica", opcoes: ["Rural", "Urbana"] },
@@ -210,7 +211,7 @@ export const PESQUISA_GESTANTE: PesquisaDemo = {
     {
       titulo: "Identificação e perfil sociodemográfico",
       campos: [
-        { n: 1, enunciado: "Nome completo da beneficiária", tipo: "texto", obrigatoria: true },
+        { n: 1, enunciado: "Nome completo da beneficiária", tipo: "texto", obrigatoria: true, full: true },
         { n: 2, enunciado: "CPF", tipo: "texto" },
         { n: 3, enunciado: "NIS (Número de Identificação Social)", tipo: "texto", obrigatoria: true, ajuda: "Número usado para programas sociais como Bolsa Família ou CadÚnico." },
         { n: 4, enunciado: "Zona", tipo: "unica", obrigatoria: true, opcoes: ["Rural", "Urbana"], ajuda: "Você mora na zona rural (sítio, povoado) ou na cidade?" },
