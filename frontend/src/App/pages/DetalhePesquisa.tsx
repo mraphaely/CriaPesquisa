@@ -25,7 +25,7 @@ type Valor = string | string[] | Record<string, string> | undefined;
 
 const Wrap = styled.div`
   width: 100%;
-  max-width: 840px;
+  max-width: 960px;
   margin: 0 auto;
 `;
 
@@ -98,10 +98,13 @@ const SecaoBarra = styled.div`
 
 const Grade = styled.div`
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: 1fr;
   column-gap: 28px;
-  @media (max-width: 640px) {
-    grid-template-columns: 1fr;
+  @media (min-width: 641px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  @media (min-width: 1040px) {
+    grid-template-columns: repeat(3, 1fr);
   }
 `;
 
@@ -219,7 +222,7 @@ const norm = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCa
 // Escolha única com mais de 5 opções é renderizada como dropdown.
 function unicaComoDropdown(c: Campo): boolean {
   if (c.tipo !== "unica") return false;
-  return (c.opcoes?.length ?? 0) + (c.outro ? 1 : 0) > 5;
+  return (c.opcoes?.length ?? 0) + (c.outro ? 1 : 0) > 3;
 }
 
 // Campos "pequenos" ocupam meia largura (ficam lado a lado); os demais, a linha toda.
@@ -474,7 +477,7 @@ export function DetalhePesquisa() {
         );
       case "unica": {
         const opcoes = [...(c.opcoes ?? []), ...(c.outro ? ["Outro…"] : [])];
-        if (opcoes.length > 5) {
+        if (opcoes.length > 3) {
           return (
             <Select value={(v as string) ?? ""} onChange={(e) => set(c.n, e.target.value)} style={{ maxWidth: 340 }}>
               <option value="">Selecione…</option>
