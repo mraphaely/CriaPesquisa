@@ -174,17 +174,20 @@ const Escala = styled.div`
 `;
 
 const Bolha = styled.button<{ $ativa: boolean }>`
-  width: 36px;
-  height: 36px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
   cursor: pointer;
   font-size: 13px;
   font-weight: 700;
-  border: 1.5px solid ${(p) => (p.$ativa ? p.theme.cores.primary : p.theme.cores.border)};
-  background: ${(p) => (p.$ativa ? p.theme.cores.primary : "transparent")};
-  color: ${(p) => (p.$ativa ? "#fff" : p.theme.cores.textMuted)};
+  border: 1.5px solid ${(p) => (p.$ativa ? "#1756B8" : p.theme.cores.border)};
+  background: ${(p) => (p.$ativa ? "#1756B8" : p.theme.cores.surface)};
+  color: ${(p) => (p.$ativa ? "#ffffff" : p.theme.cores.text)};
   transition: all 0.12s ease;
-  &:hover { border-color: ${(p) => p.theme.cores.accent}; }
+  &:hover {
+    border-color: ${(p) => p.theme.cores.accent};
+    background: ${(p) => (p.$ativa ? "#1756B8" : p.theme.cores.accentSoft)};
+  }
 `;
 
 const Pills = styled.div`
@@ -201,11 +204,14 @@ const Pill = styled.button<{ $ativa: boolean }>`
   font-size: 13px;
   font-weight: 600;
   text-align: center;
-  border: 1.5px solid ${(p) => (p.$ativa ? p.theme.cores.primary : p.theme.cores.border)};
-  background: ${(p) => (p.$ativa ? p.theme.cores.primary : "transparent")};
-  color: ${(p) => (p.$ativa ? "#fff" : p.theme.cores.text)};
+  border: 1.5px solid ${(p) => (p.$ativa ? "#1756B8" : p.theme.cores.border)};
+  background: ${(p) => (p.$ativa ? "#1756B8" : p.theme.cores.surface)};
+  color: ${(p) => (p.$ativa ? "#ffffff" : p.theme.cores.text)};
   transition: background 0.12s ease, border-color 0.12s ease, color 0.12s ease;
-  &:hover { border-color: ${(p) => p.theme.cores.accent}; }
+  &:hover {
+    border-color: ${(p) => p.theme.cores.accent};
+    background: ${(p) => (p.$ativa ? "#1756B8" : p.theme.cores.accentSoft)};
+  }
 `;
 
 const GradeCampos = styled.div`
@@ -269,6 +275,21 @@ function ehPequeno(c: Campo): boolean {
   return false;
 }
 
+// Validação de CPF (11 dígitos + dígitos verificadores).
+function cpfValido(cpf: string): boolean {
+  if (cpf.length !== 11 || /^(\d)\1{10}$/.test(cpf)) return false;
+  let soma = 0;
+  for (let i = 0; i < 9; i++) soma += Number(cpf[i]) * (10 - i);
+  let d1 = (soma * 10) % 11;
+  if (d1 === 10) d1 = 0;
+  if (d1 !== Number(cpf[9])) return false;
+  soma = 0;
+  for (let i = 0; i < 10; i++) soma += Number(cpf[i]) * (11 - i);
+  let d2 = (soma * 10) % 11;
+  if (d2 === 10) d2 = 0;
+  return d2 === Number(cpf[10]);
+}
+
 export function DetalhePesquisa() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -308,14 +329,27 @@ export function DetalhePesquisa() {
     if (c.tipo === "grade") return !!v && Object.keys(v).length === (c.grade?.linhas.length ?? 0);
     return v !== undefined && v !== "";
   }
-  function faltando(sec: Secao): Campo | null {
-    return sec.campos.find((c) => c.obrigatoria && !respondido(c)) ?? null;
+  function validarCampo(c: Campo): string | null {
+    const v = respostas[c.n];
+    if (c.obrigatoria && !respondido(c)) return `Responda a pergunta obrigatória ${c.n}: “${c.enunciado}”.`;
+    if ((c.formato === "cpf" || c.formato === "nis") && typeof v === "string" && v.length > 0) {
+      if (v.length !== 11) return `A pergunta ${c.n} (${c.formato.toUpperCase()}) deve ter 11 dígitos.`;
+      if (c.formato === "cpf" && !cpfValido(v)) return `O CPF da pergunta ${c.n} é inválido.`;
+    }
+    return null;
+  }
+  function erroDaSecao(sec: Secao): string | null {
+    for (const c of sec.campos) {
+      const e = validarCampo(c);
+      if (e) return e;
+    }
+    return null;
   }
 
   function proximo() {
     if (!pesquisa) return;
-    const falta = faltando(pesquisa.secoes[passo]);
-    if (falta) return setErro(`Responda a pergunta obrigatória ${falta.n}: “${falta.enunciado}”.`);
+    const e = erroDaSecao(pesquisa.secoes[passo]);
+    if (e) return setErro(e);
     setErro("");
     setPasso((p) => Math.min(p + 1, nSecoes - 1));
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -331,11 +365,11 @@ export function DetalhePesquisa() {
     setErro("");
     if (!pesquisa) return;
     for (let i = 0; i < pesquisa.secoes.length; i++) {
-      const falta = faltando(pesquisa.secoes[i]);
-      if (falta) {
+      const e = erroDaSecao(pesquisa.secoes[i]);
+      if (e) {
         setBusca("");
         setPasso(i);
-        return setErro(`Responda a pergunta obrigatória ${falta.n}: “${falta.enunciado}”.`);
+        return setErro(e);
       }
     }
     setEnviado(true);
@@ -494,6 +528,17 @@ export function DetalhePesquisa() {
     const v = respostas[c.n];
     switch (c.tipo) {
       case "texto":
+        if (c.formato === "cpf" || c.formato === "nis") {
+          return (
+            <TextInput
+              inputMode="numeric"
+              value={(v as string) ?? ""}
+              onChange={(e) => set(c.n, e.target.value.replace(/\D/g, "").slice(0, 11))}
+              placeholder="Somente números (11 dígitos)"
+              style={{ width: "100%" }}
+            />
+          );
+        }
         return <TextInput value={(v as string) ?? ""} onChange={(e) => set(c.n, e.target.value)} placeholder="Sua resposta" style={{ width: "100%" }} />;
       case "paragrafo":
         return <Textarea value={(v as string) ?? ""} onChange={(e) => set(c.n, e.target.value)} placeholder="Sua resposta" style={{ width: "100%" }} />;
