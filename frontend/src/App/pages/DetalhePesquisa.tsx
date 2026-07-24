@@ -591,7 +591,9 @@ export function DetalhePesquisa() {
         const opcoes = [...(c.opcoes ?? []), ...(c.outro ? ["Outro…"] : [])];
         return (
           <div>
-            {c.limite && <Ajuda style={{ margin: "0 0 8px" }}>Marcar até {c.limite}</Ajuda>}
+            <Ajuda style={{ margin: "0 0 8px" }}>
+              {c.limite ? `Você pode escolher mais de uma — marque até ${c.limite}.` : "Você pode escolher mais de uma opção."}
+            </Ajuda>
             <Pills>
               {opcoes.map((o) => {
                 const ativa = sel.includes(o);
