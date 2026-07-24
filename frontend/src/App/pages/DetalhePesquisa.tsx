@@ -500,12 +500,12 @@ export function DetalhePesquisa() {
       case "paragrafo":
         return <Textarea value={(v as string) ?? ""} onChange={(e) => set(c.n, e.target.value)} placeholder="Sua resposta" style={{ width: "100%" }} />;
       case "numero":
-        return <TextInput type="number" value={(v as string) ?? ""} onChange={(e) => set(c.n, e.target.value)} style={{ maxWidth: 220 }} />;
+        return <TextInput type="number" value={(v as string) ?? ""} onChange={(e) => set(c.n, e.target.value)} style={{ width: "100%" }} />;
       case "data":
-        return <TextInput type="date" value={(v as string) ?? ""} onChange={(e) => set(c.n, e.target.value)} style={{ maxWidth: 220 }} />;
+        return <TextInput type="date" value={(v as string) ?? ""} onChange={(e) => set(c.n, e.target.value)} style={{ width: "100%" }} />;
       case "selecao":
         return (
-          <Select value={(v as string) ?? ""} onChange={(e) => set(c.n, e.target.value)} style={{ maxWidth: 340 }}>
+          <Select value={(v as string) ?? ""} onChange={(e) => set(c.n, e.target.value)} style={{ width: "100%" }}>
             <option value="">Selecione…</option>
             {c.opcoes?.map((o) => (
               <option key={o} value={o}>{o}</option>
@@ -516,7 +516,7 @@ export function DetalhePesquisa() {
         const opcoes = [...(c.opcoes ?? []), ...(c.outro ? ["Outro…"] : [])];
         if (opcoes.length > 3) {
           return (
-            <Select value={(v as string) ?? ""} onChange={(e) => set(c.n, e.target.value)} style={{ maxWidth: 340 }}>
+            <Select value={(v as string) ?? ""} onChange={(e) => set(c.n, e.target.value)} style={{ width: "100%" }}>
               <option value="">Selecione…</option>
               {opcoes.map((o) => (
                 <option key={o} value={o}>{o}</option>
