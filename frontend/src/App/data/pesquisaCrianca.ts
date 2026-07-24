@@ -26,6 +26,7 @@ export interface Campo {
   grade?: { linhas: string[]; colunas: string[] };
   full?: boolean; // força ocupar a linha inteira (ex.: nome completo)
   novaLinha?: boolean; // força começar numa nova linha da grade (coluna 1)
+  dropdown?: boolean; // força escolha única a renderizar como dropdown (ex.: opções longas)
 }
 
 export interface Secao {
@@ -251,7 +252,7 @@ export const PESQUISA_GESTANTE: PesquisaDemo = {
         { n: 21, enunciado: "A gestante e a família participam de atividades propostas pelo CRAS?", tipo: "grade", grade: { linhas: ANTES_APOS, colunas: ["Sim", "Não"] }, ajuda: "Reuniões, palestras, acompanhamento familiar, grupos de gestantes." },
         { n: 22, enunciado: "Recebeu alguma orientação sobre aleitamento materno?", tipo: "grade", grade: { linhas: ANTERIOR_ATUAL, colunas: ["Sim", "Não"] } },
         { n: 23, enunciado: "Quando iniciou o pré-natal?", tipo: "unica", opcoes: ["Antes de 12 semanas (3 meses)", "Após 12 semanas (3 meses)", "Não soube informar", "Sem pré-natal"], ajuda: "Pré-natal é o acompanhamento da gestação por profissionais de saúde." },
-        { n: 24, enunciado: "Tipo de risco da gestação", tipo: "unica", obrigatoria: true, opcoes: ["Risco habitual (baixo)", "Alto risco (ex.: hipertensão, diabetes, idade materna, histórico)"], ajuda: "Alto risco: maior possibilidade de problema de saúde na gestante ou no bebê." },
+        { n: 24, enunciado: "Tipo de risco da gestação", tipo: "unica", obrigatoria: true, dropdown: true, opcoes: ["Risco habitual (baixo)", "Alto risco (ex.: hipertensão, diabetes, idade materna, histórico)"], ajuda: "Alto risco: maior possibilidade de problema de saúde na gestante ou no bebê." },
         { n: 25, enunciado: "A gestante realizou os exames laboratoriais obrigatórios (protocolo do Ministério da Saúde)?", tipo: "grade", grade: { linhas: ANTERIOR_ATUAL, colunas: ["Urocultura", "Sumário de urina", "Exames de sangue", "Testes rápidos", "Ultrassom"] }, ajuda: "Testes rápidos: sífilis e HIV. Ultrassom: exame para ver o bebê." },
         { n: 26, enunciado: "Quais dificuldades você enfrenta em relação ao Cartão CRIA?", tipo: "multipla", outro: true, opcoes: ["Bloqueio ou suspensão do benefício", "Atraso no pagamento", "Dificuldade de transporte para sacar ou utilizar o benefício", "Falta de informações claras sobre regras e condicionalidades", "Dificuldade de acesso ou atendimento no CRAS", "Problemas no Aplicativo CAIXA TEM", "Não há dificuldade"] },
       ],
