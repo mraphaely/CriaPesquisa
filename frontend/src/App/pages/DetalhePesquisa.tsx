@@ -21,7 +21,7 @@ type Valor = string | string[] | Record<string, string> | undefined;
 
 const Wrap = styled.div`
   width: 100%;
-  max-width: 960px;
+  max-width: 820px;
   margin: 0 auto;
 `;
 
@@ -98,9 +98,6 @@ const Grade = styled.div`
   column-gap: 28px;
   @media (min-width: 641px) {
     grid-template-columns: repeat(2, 1fr);
-  }
-  @media (min-width: 1040px) {
-    grid-template-columns: repeat(3, 1fr);
   }
 `;
 
