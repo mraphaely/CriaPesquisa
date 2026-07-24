@@ -246,9 +246,10 @@ function unicaComoDropdown(c: Campo): boolean {
   return (c.opcoes?.length ?? 0) + (c.outro ? 1 : 0) > 3;
 }
 
-// Campos "pequenos" ocupam meia largura (ficam lado a lado); os demais, a linha toda.
+// Campos "pequenos" ocupam meia/terço da largura (ficam lado a lado); os demais, a linha toda.
 function ehPequeno(c: Campo): boolean {
-  if (c.tipo === "numero" || c.tipo === "data" || c.tipo === "selecao") return true;
+  if (c.full) return false;
+  if (c.tipo === "texto" || c.tipo === "numero" || c.tipo === "data" || c.tipo === "selecao") return true;
   if (c.tipo === "escala") return (c.escala?.max ?? 10) <= 5;
   if (unicaComoDropdown(c)) return true;
   if (c.tipo === "unica") return (c.opcoes?.length ?? 0) <= 2 && !c.outro;
@@ -480,16 +481,16 @@ export function DetalhePesquisa() {
     const v = respostas[c.n];
     switch (c.tipo) {
       case "texto":
-        return <TextInput value={(v as string) ?? ""} onChange={(e) => set(c.n, e.target.value)} placeholder="Sua resposta" />;
+        return <TextInput value={(v as string) ?? ""} onChange={(e) => set(c.n, e.target.value)} placeholder="Sua resposta" style={{ width: "100%" }} />;
       case "paragrafo":
-        return <Textarea value={(v as string) ?? ""} onChange={(e) => set(c.n, e.target.value)} placeholder="Sua resposta" />;
+        return <Textarea value={(v as string) ?? ""} onChange={(e) => set(c.n, e.target.value)} placeholder="Sua resposta" style={{ width: "100%" }} />;
       case "numero":
-        return <TextInput type="number" value={(v as string) ?? ""} onChange={(e) => set(c.n, e.target.value)} style={{ maxWidth: 220 }} />;
+        return <TextInput type="number" value={(v as string) ?? ""} onChange={(e) => set(c.n, e.target.value)} style={{ width: "100%" }} />;
       case "data":
-        return <TextInput type="date" value={(v as string) ?? ""} onChange={(e) => set(c.n, e.target.value)} style={{ maxWidth: 220 }} />;
+        return <TextInput type="date" value={(v as string) ?? ""} onChange={(e) => set(c.n, e.target.value)} style={{ width: "100%" }} />;
       case "selecao":
         return (
-          <Select value={(v as string) ?? ""} onChange={(e) => set(c.n, e.target.value)} style={{ maxWidth: 340 }}>
+          <Select value={(v as string) ?? ""} onChange={(e) => set(c.n, e.target.value)} style={{ width: "100%" }}>
             <option value="">Selecione…</option>
             {c.opcoes?.map((o) => (
               <option key={o} value={o}>{o}</option>
