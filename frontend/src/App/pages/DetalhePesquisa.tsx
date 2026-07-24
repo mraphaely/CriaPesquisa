@@ -110,6 +110,7 @@ const Grade = styled.div`
 
 const Bloco = styled.div<{ $full?: boolean }>`
   grid-column: ${(p) => (p.$full ? "1 / -1" : "auto")};
+  min-width: 0; /* permite o item do grid encolher (evita overflow por conteúdo longo) */
   padding: 16px 0;
   border-top: 1px solid ${(p) => p.theme.cores.border};
   @media (max-width: 640px) {
