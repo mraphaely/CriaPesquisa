@@ -96,10 +96,22 @@ const SecaoBarra = styled.div`
   margin: 4px 0 16px 48px;
 `;
 
-const Bloco = styled.div`
+const Grade = styled.div`
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  column-gap: 28px;
+  @media (max-width: 640px) {
+    grid-template-columns: 1fr;
+  }
+`;
+
+const Bloco = styled.div<{ $full?: boolean }>`
+  grid-column: ${(p) => (p.$full ? "1 / -1" : "auto")};
   padding: 16px 0;
   border-top: 1px solid ${(p) => p.theme.cores.border};
-  &:first-of-type { border-top: none; padding-top: 4px; }
+  @media (max-width: 640px) {
+    grid-column: 1 / -1;
+  }
 `;
 
 const EnunciadoLinha = styled.div`
@@ -203,6 +215,21 @@ const CheckBadge = styled.div`
 `;
 
 const norm = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+
+// Escolha única com mais de 5 opções é renderizada como dropdown.
+function unicaComoDropdown(c: Campo): boolean {
+  if (c.tipo !== "unica") return false;
+  return (c.opcoes?.length ?? 0) + (c.outro ? 1 : 0) > 5;
+}
+
+// Campos "pequenos" ocupam meia largura (ficam lado a lado); os demais, a linha toda.
+function ehPequeno(c: Campo): boolean {
+  if (c.tipo === "numero" || c.tipo === "data" || c.tipo === "selecao") return true;
+  if (c.tipo === "escala") return (c.escala?.max ?? 10) <= 5;
+  if (unicaComoDropdown(c)) return true;
+  if (c.tipo === "unica") return (c.opcoes?.length ?? 0) <= 2 && !c.outro;
+  return false;
+}
 
 export function DetalhePesquisa() {
   const { id } = useParams();
@@ -380,19 +407,21 @@ export function DetalhePesquisa() {
                 <SecaoTitulo>{sec.titulo}</SecaoTitulo>
               </SecaoHeader>
               <SecaoBarra />
-              {sec.campos.map((c) => (
-                <Bloco key={c.n}>
-                  <EnunciadoLinha>
-                    <NumBadge>{c.n}</NumBadge>
-                    <Enunciado>
-                      {c.enunciado}
-                      {c.obrigatoria && <Obrig>*</Obrig>}
-                    </Enunciado>
-                  </EnunciadoLinha>
-                  {c.ajuda && <Ajuda>{c.ajuda}</Ajuda>}
-                  <CampoBox>{renderCampo(c)}</CampoBox>
-                </Bloco>
-              ))}
+              <Grade>
+                {sec.campos.map((c) => (
+                  <Bloco key={c.n} $full={!ehPequeno(c)}>
+                    <EnunciadoLinha>
+                      <NumBadge>{c.n}</NumBadge>
+                      <Enunciado>
+                        {c.enunciado}
+                        {c.obrigatoria && <Obrig>*</Obrig>}
+                      </Enunciado>
+                    </EnunciadoLinha>
+                    {c.ajuda && <Ajuda>{c.ajuda}</Ajuda>}
+                    <CampoBox>{renderCampo(c)}</CampoBox>
+                  </Bloco>
+                ))}
+              </Grade>
             </Card>
           ))
         )}
@@ -445,6 +474,16 @@ export function DetalhePesquisa() {
         );
       case "unica": {
         const opcoes = [...(c.opcoes ?? []), ...(c.outro ? ["Outro…"] : [])];
+        if (opcoes.length > 5) {
+          return (
+            <Select value={(v as string) ?? ""} onChange={(e) => set(c.n, e.target.value)} style={{ maxWidth: 340 }}>
+              <option value="">Selecione…</option>
+              {opcoes.map((o) => (
+                <option key={o} value={o}>{o}</option>
+              ))}
+            </Select>
+          );
+        }
         return (
           <div>
             {opcoes.map((o) => (
