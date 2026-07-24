@@ -27,6 +27,7 @@ export interface Campo {
   full?: boolean; // força ocupar a linha inteira (ex.: nome completo)
   novaLinha?: boolean; // força começar numa nova linha da grade (coluna 1)
   dropdown?: boolean; // força escolha única a renderizar como dropdown (ex.: opções longas)
+  formato?: "cpf" | "nis"; // restringe a dígitos e valida o formato
 }
 
 export interface Secao {
@@ -56,10 +57,10 @@ export const PESQUISA_CRIANCA: PesquisaDemo = {
       titulo: "Identificação e perfil sociodemográfico",
       campos: [
         { n: 1, enunciado: "Nome completo do(a) entrevistado(a)", tipo: "texto", obrigatoria: true, full: true },
-        { n: 2, enunciado: "CPF", tipo: "texto", obrigatoria: true },
-        { n: 3, enunciado: "NIS", tipo: "texto" },
-        { n: 4, enunciado: "Zona", tipo: "unica", opcoes: ["Rural", "Urbana"] },
-        { n: 5, enunciado: "Município", tipo: "texto" },
+        { n: 2, enunciado: "CPF", tipo: "texto", obrigatoria: true, formato: "cpf" },
+        { n: 3, enunciado: "NIS", tipo: "texto", formato: "nis" },
+        { n: 4, enunciado: "Zona", tipo: "unica", obrigatoria: true, opcoes: ["Rural", "Urbana"] },
+        { n: 5, enunciado: "Município", tipo: "texto", obrigatoria: true },
         { n: 6, enunciado: "Grau de parentesco do(a) beneficiário(a) com a criança", tipo: "unica", opcoes: ["Mãe", "Pai", "Avós"], outro: true },
         { n: 7, enunciado: "Orientação sexual", tipo: "unica", opcoes: ["Heterosexual", "Homossexual", "Bissexual", "Assexual", "Pansexual"] },
         { n: 8, enunciado: "Sexo biológico", tipo: "unica", opcoes: ["Masculino", "Feminino", "Intersexo"] },
@@ -89,7 +90,7 @@ export const PESQUISA_CRIANCA: PesquisaDemo = {
       titulo: "Dados da criança",
       campos: [
         { n: 15, enunciado: "Nome da criança", tipo: "texto" },
-        { n: 16, enunciado: "CPF da criança", tipo: "texto" },
+        { n: 16, enunciado: "CPF da criança", tipo: "texto", formato: "cpf" },
         { n: 17, enunciado: "Data de nascimento da criança", tipo: "data" },
         { n: 18, enunciado: "Sexo biológico da criança", tipo: "unica", opcoes: ["Masculino", "Feminino", "Intersexo"] },
       ],
@@ -214,8 +215,8 @@ export const PESQUISA_GESTANTE: PesquisaDemo = {
       titulo: "Identificação e perfil sociodemográfico",
       campos: [
         { n: 1, enunciado: "Nome completo da beneficiária", tipo: "texto", obrigatoria: true, full: true },
-        { n: 2, enunciado: "CPF", tipo: "texto" },
-        { n: 3, enunciado: "NIS (Número de Identificação Social)", tipo: "texto", obrigatoria: true, ajuda: "Número usado para programas sociais como Bolsa Família ou CadÚnico." },
+        { n: 2, enunciado: "CPF", tipo: "texto", formato: "cpf" },
+        { n: 3, enunciado: "NIS (Número de Identificação Social)", tipo: "texto", obrigatoria: true, formato: "nis", ajuda: "Número usado para programas sociais como Bolsa Família ou CadÚnico." },
         { n: 4, enunciado: "Zona", tipo: "unica", obrigatoria: true, opcoes: ["Rural", "Urbana"], ajuda: "Você mora na zona rural (sítio, povoado) ou na cidade?" },
         { n: 5, enunciado: "Município", tipo: "selecao", obrigatoria: true, opcoes: MUNICIPIOS_AL },
         { n: 6, enunciado: "Orientação sexual", tipo: "unica", outro: true, opcoes: ["Heterosexual", "Homossexual", "Bissexual", "Assexual", "Pansexual"], ajuda: "Se preferir não responder, pode deixar em branco." },
