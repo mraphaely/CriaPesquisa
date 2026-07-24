@@ -255,6 +255,7 @@ const norm = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCa
 // Escolha única com mais de 5 opções é renderizada como dropdown.
 function unicaComoDropdown(c: Campo): boolean {
   if (c.tipo !== "unica") return false;
+  if (c.dropdown) return true;
   return (c.opcoes?.length ?? 0) + (c.outro ? 1 : 0) > 3;
 }
 
@@ -511,7 +512,7 @@ export function DetalhePesquisa() {
         );
       case "unica": {
         const opcoes = [...(c.opcoes ?? []), ...(c.outro ? ["Outro…"] : [])];
-        if (opcoes.length > 3) {
+        if (unicaComoDropdown(c)) {
           return (
             <Select value={(v as string) ?? ""} onChange={(e) => set(c.n, e.target.value)} style={{ width: "100%" }}>
               <option value="">Selecione…</option>
