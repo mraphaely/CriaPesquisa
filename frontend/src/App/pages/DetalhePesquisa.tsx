@@ -481,16 +481,16 @@ export function DetalhePesquisa() {
     const v = respostas[c.n];
     switch (c.tipo) {
       case "texto":
-        return <TextInput value={(v as string) ?? ""} onChange={(e) => set(c.n, e.target.value)} placeholder="Sua resposta" style={{ width: "100%" }} />;
+        return <TextInput value={(v as string) ?? ""} onChange={(e) => set(c.n, e.target.value)} placeholder="Sua resposta" />;
       case "paragrafo":
-        return <Textarea value={(v as string) ?? ""} onChange={(e) => set(c.n, e.target.value)} placeholder="Sua resposta" style={{ width: "100%" }} />;
+        return <Textarea value={(v as string) ?? ""} onChange={(e) => set(c.n, e.target.value)} placeholder="Sua resposta" />;
       case "numero":
-        return <TextInput type="number" value={(v as string) ?? ""} onChange={(e) => set(c.n, e.target.value)} style={{ width: "100%" }} />;
+        return <TextInput type="number" value={(v as string) ?? ""} onChange={(e) => set(c.n, e.target.value)} style={{ maxWidth: 220 }} />;
       case "data":
-        return <TextInput type="date" value={(v as string) ?? ""} onChange={(e) => set(c.n, e.target.value)} style={{ width: "100%" }} />;
+        return <TextInput type="date" value={(v as string) ?? ""} onChange={(e) => set(c.n, e.target.value)} style={{ maxWidth: 220 }} />;
       case "selecao":
         return (
-          <Select value={(v as string) ?? ""} onChange={(e) => set(c.n, e.target.value)} style={{ width: "100%" }}>
+          <Select value={(v as string) ?? ""} onChange={(e) => set(c.n, e.target.value)} style={{ maxWidth: 340 }}>
             <option value="">Selecione…</option>
             {c.opcoes?.map((o) => (
               <option key={o} value={o}>{o}</option>
