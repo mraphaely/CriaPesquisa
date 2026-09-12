@@ -13,7 +13,8 @@ export async function resumo(req: Request, res: Response) {
   const pesquisa = await pesquisaModel.obterPorId(pesquisaId);
   if (!pesquisa) throw new HttpError(404, "NAO_ENCONTRADA", "Pesquisa não encontrada");
 
-  const filtros = extrairFiltrosBase(req.query);
+  // Resultados oficiais consideram apenas respostas aprovadas pelo PO.
+  const filtros = { ...extrairFiltrosBase(req.query), status: "APROVADA" as const };
   const [total, itens] = await Promise.all([
     respostaModel.contar(pesquisaId, filtros),
     respostaModel.itensPorPergunta(pesquisaId, filtros),
@@ -29,7 +30,8 @@ export async function exportar(req: Request, res: Response) {
   const pesquisa = await pesquisaModel.obterPorId(pesquisaId);
   if (!pesquisa) throw new HttpError(404, "NAO_ENCONTRADA", "Pesquisa não encontrada");
 
-  const filtros = extrairFiltrosBase(req.query);
+  // A exportação oficial também considera apenas respostas aprovadas.
+  const filtros = { ...extrairFiltrosBase(req.query), status: "APROVADA" as const };
   const total = await respostaModel.contar(pesquisaId, filtros);
   const [{ itens: respostas }, itensDasRespostas] = await Promise.all([
     respostaModel.listar(pesquisaId, { ...filtros, page: 1, pageSize: Math.max(total, 1) }),

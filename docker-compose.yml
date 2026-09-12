@@ -3,9 +3,10 @@ services:
     image: postgres:16
     container_name: criapesquisa_pg
     environment:
-      POSTGRES_DB: criapesquisa
-      POSTGRES_USER: cria_user
-      POSTGRES_PASSWORD: cria_senha
+      POSTGRES_DB: ${POSTGRES_DB:-criapesquisa}
+      POSTGRES_USER: ${POSTGRES_USER:-cria_user}
+      # Defina POSTGRES_PASSWORD no ambiente. O default existe só para dev local.
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-cria_senha}
     ports:
       - "5432:5432"
     volumes:

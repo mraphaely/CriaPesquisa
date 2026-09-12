@@ -4,6 +4,7 @@ import { authRoutes } from "./authRoutes.js";
 import { pesquisaRoutes } from "./pesquisaRoutes.js";
 import { respostaRoutes } from "./respostaRoutes.js";
 import { relatorioRoutes } from "./relatorioRoutes.js";
+import { painelRoutes } from "./painelRoutes.js";
 import { usuarioRoutes } from "./usuarioRoutes.js";
 import { logRoutes } from "./logRoutes.js";
 
@@ -13,5 +14,6 @@ apiRoutes.use(authRoutes);
 apiRoutes.use(pesquisaRoutes);
 apiRoutes.use(respostaRoutes);
 apiRoutes.use(relatorioRoutes);
+apiRoutes.use(painelRoutes);
 apiRoutes.use(usuarioRoutes);
 apiRoutes.use(logRoutes);

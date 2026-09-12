@@ -1,11 +1,11 @@
 import { useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import styled from "styled-components";
-import { LogIn, Eye } from "lucide-react";
+import { LogIn, Eye, EyeOff } from "lucide-react";
 import { useLogin } from "../api/useLogin.js";
 import { useAuth } from "../auth/useAuth.js";
 import { Logo } from "../../Components/ui/Logo.js";
-import { Button, Field, Label, TextInput, Muted, Banner } from "../../Styles/ui.js";
+import { Button, Field, Label, TextInput, Muted, Banner, Checkbox } from "../../Styles/ui.js";
 
 // Padrão de fundo (estrelas, luas, corações, brilhos, carinhas e rabiscos) —
 // vetorial, sutil e tematizável. "Quase transparente, mas visível".
@@ -89,19 +89,55 @@ const Sub = styled.div`
   text-transform: uppercase;
 `;
 
-const Divisor = styled.div`
+const SenhaBox = styled.div`
+  position: relative;
   display: flex;
   align-items: center;
-  gap: 10px;
-  margin: 18px 0 14px;
+
+  input {
+    width: 100%;
+    box-sizing: border-box;
+    padding-right: 46px;
+  }
+`;
+
+const OlhoBtn = styled.button`
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 34px;
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  border-radius: 9px;
+  cursor: pointer;
   color: ${(p) => p.theme.cores.textMuted};
-  font-size: 11px;
-  &::before, &::after { content: ""; flex: 1; height: 1px; background: ${(p) => p.theme.cores.border}; }
+  transition: background 0.15s ease, color 0.15s ease;
+
+  &:hover {
+    color: ${(p) => p.theme.cores.accent};
+    background: ${(p) => p.theme.cores.accentSoft};
+  }
+  &:focus-visible {
+    outline: none;
+    color: ${(p) => p.theme.cores.accent};
+    box-shadow: 0 0 0 3px ${(p) => p.theme.cores.accentSoft};
+  }
+`;
+
+const LinhaLembrar = styled.div`
+  margin: 4px 0 16px;
 `;
 
 export function Login() {
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState(() => localStorage.getItem("lembrarEmail") ?? "");
   const [senha, setSenha] = useState("");
+  const [verSenha, setVerSenha] = useState(false);
+  const [lembrar, setLembrar] = useState(true);
   const { mutateAsync, isPending } = useLogin();
   const { entrar } = useAuth();
   const navigate = useNavigate();
@@ -112,16 +148,17 @@ export function Login() {
     setErro("");
     try {
       const { token, usuario } = await mutateAsync({ email, senha });
-      entrar(token, usuario);
+      entrar(token, usuario, lembrar);
+      if (lembrar) localStorage.setItem("lembrarEmail", email);
+      else localStorage.removeItem("lembrarEmail");
       navigate("/");
-    } catch {
-      setErro("E-mail ou senha inválidos");
+    } catch (err) {
+      const status = (err as { response?: { status?: number } }).response?.status;
+      if (status === 401) setErro("E-mail ou senha inválidos");
+      else if (status === undefined)
+        setErro("Não foi possível conectar ao servidor. Verifique se a API está no ar (porta 3333).");
+      else setErro("Erro ao entrar. Tente novamente em instantes.");
     }
-  }
-
-  function verDemonstracao() {
-    entrar("demo-token", { id: "demo", nome: "Visitante", email: "demo@cria.al", papel: "ADMIN" });
-    navigate("/");
   }
 
   return (
@@ -134,25 +171,42 @@ export function Login() {
         <form onSubmit={onSubmit} aria-label="login">
           <Field>
             <Label htmlFor="email">E-mail</Label>
-            <TextInput id="email" type="email" placeholder="voce@cria.al" value={email} onChange={(e) => setEmail(e.target.value)} />
+            <TextInput id="email" type="email" placeholder="nome.sobrenome@instituicao.gov.br" value={email} onChange={(e) => setEmail(e.target.value)} />
           </Field>
           <Field>
             <Label htmlFor="senha">Senha</Label>
-            <TextInput id="senha" type="password" placeholder="••••••••" value={senha} onChange={(e) => setSenha(e.target.value)} />
+            <SenhaBox>
+              <TextInput
+                id="senha"
+                type={verSenha ? "text" : "password"}
+                placeholder="••••••••"
+                value={senha}
+                onChange={(e) => setSenha(e.target.value)}
+              />
+              <OlhoBtn
+                type="button"
+                onClick={() => setVerSenha((v) => !v)}
+                aria-label={verSenha ? "ocultar senha" : "mostrar senha"}
+                title={verSenha ? "Ocultar senha" : "Mostrar senha"}
+              >
+                {verSenha ? <EyeOff size={18} /> : <Eye size={18} />}
+              </OlhoBtn>
+            </SenhaBox>
           </Field>
+          <LinhaLembrar>
+            <Checkbox>
+              <input type="checkbox" checked={lembrar} onChange={(e) => setLembrar(e.target.checked)} />
+              Lembrar-me neste dispositivo
+            </Checkbox>
+          </LinhaLembrar>
           {erro && <Banner $tone="warn" role="alert" style={{ marginBottom: 14 }}>{erro}</Banner>}
           <Button type="submit" $block disabled={isPending}>
             <LogIn size={16} />
             {isPending ? "Entrando…" : "Entrar"}
           </Button>
         </form>
-        <Divisor>ou</Divisor>
-        <Button type="button" $variant="ghost" $block onClick={verDemonstracao}>
-          <Eye size={16} />
-          Ver demonstração
-        </Button>
-        <Muted style={{ textAlign: "center", marginTop: 14, fontSize: 12 }}>
-          O login real requer o backend conectado. A demonstração abre o sistema sem servidor.
+        <Muted style={{ textAlign: "center", marginTop: 16, fontSize: 12 }}>
+          Acesse com as credenciais fornecidas pela SECRIA.
         </Muted>
       </Cartao>
     </Page>

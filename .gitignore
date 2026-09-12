@@ -18,8 +18,16 @@ coverage/
 *.log
 npm-debug.log*
 
-# Prisma
-prisma/*.db
+# Backups — contêm dados pessoais (respostas, IPs, hashes de senha). NUNCA versionar.
+backups/
+*.backup.json
+
+# Documentos internos de gestão — não publicar no repositório
+Executivo/
+
+# Prisma (padrões com ** para casar em qualquer nível, ex.: backend/prisma/)
+**/prisma/*.db
+**/prisma/seed.js
 
 # Scratch da orquestração (subagent-driven-development)
 .superpowers/

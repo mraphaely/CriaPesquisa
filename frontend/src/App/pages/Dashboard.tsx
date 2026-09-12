@@ -1,11 +1,16 @@
 import { useNavigate } from "react-router-dom";
 import styled, { useTheme } from "styled-components";
-import { Doughnut, Bar, Line } from "react-chartjs-2";
+import { Bar, Line } from "react-chartjs-2";
 import type { ChartOptions } from "chart.js";
 import { Plus, Users, Baby, HeartPulse, MapPin, Wallet } from "lucide-react";
 import "../../Components/charts/setup.js";
 import { ChartCard } from "../../Components/charts/ChartCard.js";
+import { DonutInterativo } from "../../Components/charts/DonutInterativo.js";
 import { MapaAlagoas } from "../../Components/mapa/MapaAlagoas.js";
+import { usePainel } from "../api/painel.js";
+import { usePesquisas } from "../api/pesquisas.js";
+import { useAuth } from "../auth/useAuth.js";
+import { podeGerenciarPesquisas } from "../auth/permissoes.js";
 import {
   PageHeader,
   PageTitle,
@@ -25,8 +30,8 @@ import {
   Td,
   Tag,
   Muted,
+  Select,
 } from "../../Styles/ui.js";
-import { MUNICIPIOS, TOTAIS, RACA, ZONA, FAIXA_ETARIA, INVESTIMENTO, PALETA } from "../data/cria.js";
 
 const Grade = styled.div`
   display: grid;
@@ -42,6 +47,24 @@ const GradeMapa = styled.div`
   grid-template-columns: 1.6fr 1fr;
   @media (max-width: 900px) {
     grid-template-columns: 1fr;
+  }
+`;
+
+const SeletorResultados = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: ${(p) => p.theme.cores.surface};
+  border: 1px solid ${(p) => p.theme.cores.border};
+  label {
+    font-size: 12.5px;
+    font-weight: 600;
+    color: ${(p) => p.theme.cores.textMuted};
   }
 `;
 
@@ -68,6 +91,11 @@ function fmtMil(n: number): string {
 export function Dashboard() {
   const navigate = useNavigate();
   const t = useTheme();
+  const { usuario } = useAuth();
+  const podeCriar = podeGerenciarPesquisas(usuario?.papel);
+  const { data, isLoading, isError } = usePainel();
+  const { data: listaPesquisas } = usePesquisas();
+
   const ticks = { color: t.cores.textMuted, font: { size: 10 } };
   const grid = { color: t.cores.border };
 
@@ -83,42 +111,87 @@ export function Dashboard() {
     plugins: { legend: { display: false } },
     scales: { x: { ticks: { ...ticks, maxTicksLimit: 8 }, grid: { display: false } }, y: { ticks, grid } },
   };
-  const optDoughnut: ChartOptions<"doughnut"> = {
-    responsive: true,
-    maintainAspectRatio: false,
-    cutout: "66%",
-    plugins: { legend: { position: "right", labels: { color: t.cores.textMuted, font: { size: 11 }, boxWidth: 12 } } },
-  };
-
-  return (
-    <div>
-      <PageHeader>
-        <div>
-          <PageTitle>Dashboard</PageTitle>
-          <PageSubtitle>Visão geral · Cartão CRIA — Primeira Infância de Alagoas</PageSubtitle>
-        </div>
+  const cabecalho = (
+    <PageHeader>
+      <div>
+        <PageTitle>Dashboard</PageTitle>
+        <PageSubtitle>Visão geral · Cartão CRIA — Primeira Infância de Alagoas</PageSubtitle>
+      </div>
+      {podeCriar && (
         <Button onClick={() => navigate("/pesquisas/nova")}>
           <Plus size={16} />
           Nova pesquisa
         </Button>
-      </PageHeader>
+      )}
+    </PageHeader>
+  );
 
-      <Banner $tone="info" style={{ marginBottom: 22 }}>
-        Modo demonstração — dados ilustrativos. Conecte o backend + PostgreSQL para os dados reais das pesquisas.
-      </Banner>
+  if (isLoading || !data) {
+    return (
+      <div>
+        {cabecalho}
+        <Card>
+          <Muted style={{ textAlign: "center", padding: "28px 0" }}>Carregando painel…</Muted>
+        </Card>
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div>
+        {cabecalho}
+        <Banner $tone="warn">
+          Não foi possível carregar o painel. Verifique se o servidor está no ar e tente novamente.
+        </Banner>
+      </div>
+    );
+  }
+
+  const { totais, municipios, investimento, beneficios, distribuicoes, pesquisas, respostas, periodo } = data;
+  const periodoLabel = periodo ? `${periodo.mesNome}/${periodo.ano}` : "—";
+
+  return (
+    <div>
+      {cabecalho}
+
+      {listaPesquisas && listaPesquisas.itens.length > 0 && (
+        <SeletorResultados>
+          <label htmlFor="sel-resultados">Resultados por pesquisa:</label>
+          <Select
+            id="sel-resultados"
+            value=""
+            onChange={(e) => e.target.value && navigate(`/pesquisas/${e.target.value}`)}
+            style={{ maxWidth: 360 }}
+          >
+            <option value="">Selecione uma pesquisa…</option>
+            {listaPesquisas.itens.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.titulo}
+              </option>
+            ))}
+          </Select>
+        </SeletorResultados>
+      )}
+
+      <Muted style={{ display: "block", marginBottom: 22, fontSize: 12.5 }}>
+        Referência {periodoLabel} · {respostas.total} resposta(s) aprovada(s)
+        {respostas.pendentes > 0 ? ` · ${respostas.pendentes} pendente(s) de revisão` : ""} ·{" "}
+        {pesquisas.publicadas} de {pesquisas.total} pesquisa(s) publicada(s)
+      </Muted>
 
       <KpiRow>
-        <KpiCard $cor="#1756B8"><KpiIcon $cor="#1756B8"><Users size={20} /></KpiIcon><KpiValue>{fmtMil(TOTAIS.totalBeneficiarios)}</KpiValue><KpiLabel>Beneficiários</KpiLabel></KpiCard>
-        <KpiCard $cor="#16A34A"><KpiIcon $cor="#16A34A"><Baby size={20} /></KpiIcon><KpiValue>{fmtMil(TOTAIS.criancas)}</KpiValue><KpiLabel>Crianças</KpiLabel></KpiCard>
-        <KpiCard $cor="#EA580C"><KpiIcon $cor="#EA580C"><HeartPulse size={20} /></KpiIcon><KpiValue>{fmtMil(TOTAIS.gestantes)}</KpiValue><KpiLabel>Gestantes</KpiLabel></KpiCard>
-        <KpiCard $cor="#7C3AED"><KpiIcon $cor="#7C3AED"><MapPin size={20} /></KpiIcon><KpiValue>{TOTAIS.municipios}</KpiValue><KpiLabel>Municípios</KpiLabel></KpiCard>
-        <KpiCard $cor="#0EA5E9"><KpiIcon $cor="#0EA5E9"><Wallet size={20} /></KpiIcon><KpiValue>R${(TOTAIS.investimentoMensal / 1e6).toFixed(1).replace(".", ",")}Mi</KpiValue><KpiLabel>Investimento/mês</KpiLabel></KpiCard>
+        <KpiCard $cor="#1756B8"><KpiIcon $cor="#1756B8"><Users size={20} /></KpiIcon><KpiValue>{fmtMil(totais.totalBeneficiarios)}</KpiValue><KpiLabel>Beneficiários</KpiLabel></KpiCard>
+        <KpiCard $cor="#16A34A"><KpiIcon $cor="#16A34A"><Baby size={20} /></KpiIcon><KpiValue>{fmtMil(totais.criancas)}</KpiValue><KpiLabel>Crianças</KpiLabel></KpiCard>
+        <KpiCard $cor="#EA580C"><KpiIcon $cor="#EA580C"><HeartPulse size={20} /></KpiIcon><KpiValue>{fmtMil(totais.gestantes)}</KpiValue><KpiLabel>Gestantes</KpiLabel></KpiCard>
+        <KpiCard $cor="#7C3AED"><KpiIcon $cor="#7C3AED"><MapPin size={20} /></KpiIcon><KpiValue>{totais.municipios}</KpiValue><KpiLabel>Municípios</KpiLabel></KpiCard>
+        <KpiCard $cor="#0EA5E9"><KpiIcon $cor="#0EA5E9"><Wallet size={20} /></KpiIcon><KpiValue>R${(totais.investimentoMensal / 1e6).toFixed(1).replace(".", ",")}Mi</KpiValue><KpiLabel>Investimento/mês</KpiLabel></KpiCard>
       </KpiRow>
 
       <GradeMapa>
         <Card>
           <SectionTitle>Beneficiários por município</SectionTitle>
-          <MapaAlagoas />
+          <MapaAlagoas dados={municipios} />
           <Legenda>
             <span>Menos</span>
             <Escala />
@@ -137,7 +210,7 @@ export function Dashboard() {
                 </tr>
               </thead>
               <tbody>
-                {MUNICIPIOS.slice(0, 10).map((m, i) => (
+                {municipios.slice(0, 10).map((m, i) => (
                   <tr key={m.municipio}>
                     <Td><Tag $tone="muted">{i + 1}</Tag></Td>
                     <Td style={{ fontWeight: 600 }}>{m.municipio}</Td>
@@ -152,32 +225,56 @@ export function Dashboard() {
       </GradeMapa>
 
       <Grade>
-        <ChartCard titulo="Distribuição racial">
-          <Doughnut
-            data={{ labels: RACA.labels, datasets: [{ data: RACA.data, backgroundColor: PALETA, borderWidth: 2, borderColor: t.cores.surface }] }}
-            options={optDoughnut}
-          />
-        </ChartCard>
-        <ChartCard titulo="Zona (urbana × rural)">
-          <Doughnut
-            data={{ labels: ZONA.labels, datasets: [{ data: ZONA.data, backgroundColor: [t.cores.primary, t.cores.primaryDark], borderWidth: 2, borderColor: t.cores.surface }] }}
-            options={optDoughnut}
-          />
-        </ChartCard>
-        <ChartCard titulo="Faixa etária (crianças)">
-          <Bar
-            data={{ labels: FAIXA_ETARIA.labels, datasets: [{ label: "Crianças", data: FAIXA_ETARIA.criancas, backgroundColor: t.cores.primary, borderRadius: 6 }] }}
-            options={optBar}
-          />
+        <DonutInterativo
+          titulo="Distribuição racial"
+          unidade="respostas"
+          labels={distribuicoes.raca.labels}
+          data={distribuicoes.raca.data}
+        />
+        <DonutInterativo
+          titulo="Zona (urbana × rural)"
+          unidade="respostas"
+          labels={distribuicoes.zona.labels}
+          data={distribuicoes.zona.data}
+          cores={[t.cores.primary, t.cores.primaryDark]}
+        />
+        <ChartCard
+          titulo="Composição do benefício"
+          valores={beneficios.map((b) => ({ rotulo: b.label, valor: b.quantidade.toLocaleString("pt-BR"), barra: b.quantidade }))}
+        >
+          {beneficios.length ? (
+            <Bar
+              data={{ labels: beneficios.map((b) => b.label), datasets: [{ label: "Famílias", data: beneficios.map((b) => b.quantidade), backgroundColor: t.cores.primary, borderRadius: 6 }] }}
+              options={optBar}
+            />
+          ) : (
+            <SemDados />
+          )}
         </ChartCard>
       </Grade>
 
-      <ChartCard titulo="Evolução do investimento (R$ milhões/mês)" altura={220}>
-        <Line
-          data={{ labels: INVESTIMENTO.labels, datasets: [{ label: "Investimento", data: INVESTIMENTO.data, borderColor: t.cores.primary, backgroundColor: t.cores.accentSoft, fill: true, tension: 0.4, pointRadius: 2 }] }}
-          options={optLine}
-        />
+      <ChartCard
+        titulo="Evolução do investimento (R$ milhões/mês)"
+        altura={220}
+        valores={investimento.labels.map((l, i) => ({ rotulo: l, valor: `R$ ${investimento.data[i]} Mi`, barra: investimento.data[i] }))}
+      >
+        {investimento.data.length ? (
+          <Line
+            data={{ labels: investimento.labels, datasets: [{ label: "Investimento", data: investimento.data, borderColor: t.cores.primary, backgroundColor: t.cores.accentSoft, fill: true, tension: 0.4, pointRadius: 2 }] }}
+            options={optLine}
+          />
+        ) : (
+          <SemDados />
+        )}
       </ChartCard>
+    </div>
+  );
+}
+
+function SemDados() {
+  return (
+    <div style={{ height: "100%", display: "grid", placeItems: "center" }}>
+      <Muted style={{ fontSize: 12.5 }}>Sem dados suficientes ainda.</Muted>
     </div>
   );
 }

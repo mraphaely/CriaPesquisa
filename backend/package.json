@@ -5,6 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/server.ts",
+    "db": "node scripts/pg-local.mjs",
+    "dev:full": "node scripts/dev-full.mjs",
     "build": "tsc -p tsconfig.json",
     "start": "node dist/server.js",
     "test": "vitest run",
@@ -37,6 +39,7 @@
     "@types/jsonwebtoken": "^9.0.6",
     "@types/node": "^20.14.0",
     "@types/supertest": "^6.0.2",
+    "embedded-postgres": "^18.4.0-beta.17",
     "prisma": "^5.19.0",
     "supertest": "^7.0.0",
     "tsx": "^4.16.2",

@@ -10,6 +10,12 @@ export async function listarUsuarios(_req: Request, res: Response) {
   res.json({ itens });
 }
 
+export async function obterUsuario(req: Request, res: Response) {
+  const usuario = await usuarioModel.buscarPublicoPorId(req.params.id);
+  if (!usuario) throw new HttpError(404, "NAO_ENCONTRADO", "Usuário não encontrado");
+  res.json({ usuario });
+}
+
 export async function criarUsuario(req: Request, res: Response) {
   const dados = req.body as CriarUsuarioInput;
   const existente = await usuarioModel.buscarPorEmail(dados.email);
@@ -36,6 +42,10 @@ export async function criarUsuario(req: Request, res: Response) {
 export async function atualizarUsuario(req: Request, res: Response) {
   const { id } = req.params;
   const dados = req.body as AtualizarUsuarioInput;
+
+  const alvo = await usuarioModel.buscarPublicoPorId(id);
+  if (!alvo) throw new HttpError(404, "NAO_ENCONTRADO", "Usuário não encontrado");
+
   const senhaHash = dados.senha ? await hashSenha(dados.senha) : undefined;
   const usuario = await usuarioModel.atualizar(id, {
     nome: dados.nome,
@@ -49,6 +59,7 @@ export async function atualizarUsuario(req: Request, res: Response) {
     entidadeId: id,
     acao: "UPDATE",
     usuarioId: req.usuario!.id,
+    dadosAntes: alvo,
     dadosDepois: usuario,
     ip: req.ip,
   });
@@ -56,13 +67,23 @@ export async function atualizarUsuario(req: Request, res: Response) {
 }
 
 export async function desativarUsuario(req: Request, res: Response) {
+  const solicitante = req.usuario!;
   const { id } = req.params;
+
+  if (id === solicitante.id) {
+    throw new HttpError(403, "SEM_PERMISSAO", "Você não pode desativar a si mesmo");
+  }
+
+  const alvo = await usuarioModel.buscarPublicoPorId(id);
+  if (!alvo) throw new HttpError(404, "NAO_ENCONTRADO", "Usuário não encontrado");
+
   await usuarioModel.desativar(id);
   await registrarLog({
     entidade: "Usuario",
     entidadeId: id,
     acao: "DELETE",
-    usuarioId: req.usuario!.id,
+    usuarioId: solicitante.id,
+    dadosAntes: alvo,
     ip: req.ip,
   });
   res.status(204).end();

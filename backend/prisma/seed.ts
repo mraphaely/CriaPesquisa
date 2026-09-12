@@ -1,10 +1,10 @@
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
-import type { TipoPergunta } from "@prisma/client";
 import { prisma } from "../src/config/prisma.js";
 import { hashSenha } from "../src/helper/senha.js";
 import { regionalDoMunicipio } from "../src/helper/regionais.js";
+import { PESQUISAS_CARTAO_CRIA, criarPesquisaCompleta } from "./pesquisas-cartao-cria.js";
 
 const __dir = dirname(fileURLToPath(import.meta.url));
 
@@ -13,14 +13,21 @@ const FATOR_MES = [0.91, 0.94, 0.96, 0.98, 1.0, 1.02, 1.03, 1.04, 1.05, 1.06, 1.
 const FATOR_ANO: Record<number, number> = { 2024: 0.92, 2025: 1.0, 2026: 1.07 };
 const ANOS = [2024, 2025, 2026];
 
+// Domínio dos e-mails das contas-base. Configurável para não fixar o domínio
+// institucional real no repositório — defina SEED_EMAIL_DOMINIO no .env.
+const DOMINIO = process.env.SEED_EMAIL_DOMINIO ?? "@exemplo.local";
+
 async function seedUsuarios() {
   const base = [
-    { nome: "Administrador", email: "admin@cria.al", papel: "ADMIN" as const },
-    { nome: "Gestor (PO)", email: "gestor@cria.al", papel: "GESTOR" as const },
-    { nome: "Coletador", email: "coletador@cria.al", papel: "COLETADOR" as const },
-    { nome: "Visualizador", email: "visualizador@cria.al", papel: "VISUALIZADOR" as const },
+    { nome: "Administrador", email: `admin${DOMINIO}`, papel: "ADMIN" as const },
+    { nome: "Gestor (PO)", email: `gestor${DOMINIO}`, papel: "GESTOR" as const },
+    { nome: "Coletador", email: `coletador${DOMINIO}`, papel: "COLETADOR" as const },
+    { nome: "Visualizador", email: `visualizador${DOMINIO}`, papel: "VISUALIZADOR" as const },
   ];
-  const senhaHash = await hashSenha("cria123");
+  // Senha inicial das contas-base. Nunca fixe credencial real no repositório:
+  // defina SEED_PASSWORD no .env do ambiente. O default abaixo é só para dev local.
+  const senhaPadrao = process.env.SEED_PASSWORD ?? "dev-criapesquisa";
+  const senhaHash = await hashSenha(senhaPadrao);
   for (const u of base) {
     await prisma.usuario.upsert({
       where: { email: u.email },
@@ -78,128 +85,26 @@ async function seedBeneficios() {
   });
 }
 
-interface PerguntaSeed {
-  enunciado: string;
-  tipo: TipoPergunta;
-  obrigatoria?: boolean;
-  opcoes?: string[];
-}
-
-async function criarPesquisaCRIA(titulo: string, gestorId: string, adminId: string, perguntas: PerguntaSeed[]) {
-  const pesquisa = await prisma.pesquisa.create({
-    data: {
-      titulo,
-      descricao: "Pesquisa de acompanhamento do Cartão CRIA — SECRIA/AL.",
-      responsavelId: gestorId,
-      createdById: adminId,
-      status: "PUBLICADA",
-      publicadaEm: new Date(),
-    },
-  });
-  const secao = await prisma.secao.create({
-    data: { pesquisaId: pesquisa.id, titulo: "Perfil e indicadores", ordem: 0 },
-  });
-  for (let i = 0; i < perguntas.length; i++) {
-    const p = perguntas[i];
-    await prisma.pergunta.create({
-      data: {
-        pesquisaId: pesquisa.id,
-        secaoId: secao.id,
-        enunciado: p.enunciado,
-        tipo: p.tipo,
-        obrigatoria: p.obrigatoria ?? false,
-        ordem: i,
-        opcoes: p.opcoes ? { create: p.opcoes.map((texto, idx) => ({ texto, ordem: idx })) } : undefined,
-      },
-    });
-  }
-  return pesquisa;
-}
-
-async function seedRespostas(pesquisaId: string, coletadorId: string, n: number) {
-  const perguntas = await prisma.pergunta.findMany({
-    where: { pesquisaId },
-    include: { opcoes: { orderBy: { ordem: "asc" } } },
-    orderBy: { ordem: "asc" },
-  });
-  const municipios = ["Maceió", "Arapiraca", "Penedo", "Coruripe", "Piranhas", "União dos Palmares"];
-  for (let k = 0; k < n; k++) {
-    const municipio = municipios[k % municipios.length];
-    const itens = perguntas.map((p) => {
-      switch (p.tipo) {
-        case "NUMERO":
-          return { perguntaId: p.id, valorNumero: 7 + (k % 4) };
-        case "DATA":
-          return { perguntaId: p.id, valorData: new Date(2025, k % 12, 1 + (k % 27)) };
-        case "MULTIPLA_ESCOLHA":
-        case "ESCOLHA_UNICA": {
-          const op = p.opcoes[k % Math.max(1, p.opcoes.length)];
-          return { perguntaId: p.id, opcoesSelecionadas: op ? [op.texto] : [] };
-        }
-        default:
-          return { perguntaId: p.id, valorTexto: `Resposta de exemplo ${k + 1}` };
-      }
-    });
-    await prisma.resposta.create({
-      data: {
-        pesquisaId,
-        coletadorId,
-        municipio,
-        unidade: "CRAS Central",
-        regional: regionalDoMunicipio(municipio),
-        itens: { create: itens },
-      },
-    });
-  }
-}
-
-async function seedPesquisasCRIA(gestorId: string, adminId: string, coletadorId: string) {
+// Cria as pesquisas reais do Cartão CRIA (Criança e Gestante) a partir da fonte
+// da verdade em pesquisas-cartao-cria.ts. Sem respostas de exemplo — o sistema
+// já saiu do modo demonstração.
+async function seedPesquisasCRIA(gestorId: string, adminId: string) {
   if ((await prisma.pesquisa.count()) > 0) return;
-
-  const zona = ["Urbana", "Rural"];
-  const raca = ["Branca", "Preta", "Parda", "Amarela", "Indígena"];
-  const escolaridade = ["Não estudou", "Fundamental", "Médio", "Superior"];
-  const refeicoes = ["Sempre", "Quase sempre", "Raramente", "Nunca"];
-  const simNao = ["Sim", "Não"];
-
-  const crianca = await criarPesquisaCRIA("Cartão CRIA — Criança", gestorId, adminId, [
-    { enunciado: "Nome do responsável", tipo: "TEXTO", obrigatoria: true },
-    { enunciado: "Município", tipo: "TEXTO", obrigatoria: true },
-    { enunciado: "Zona", tipo: "ESCOLHA_UNICA", obrigatoria: true, opcoes: zona },
-    { enunciado: "Raça/cor da criança", tipo: "ESCOLHA_UNICA", opcoes: raca },
-    { enunciado: "Escolaridade do responsável", tipo: "ESCOLHA_UNICA", opcoes: escolaridade },
-    { enunciado: "Vacinação em dia após o CRIA?", tipo: "ESCOLHA_UNICA", opcoes: simNao },
-    { enunciado: "Refeições por dia após o CRIA", tipo: "ESCOLHA_UNICA", opcoes: refeicoes },
-    { enunciado: "Consultas de puericultura no ano", tipo: "NUMERO" },
-    { enunciado: "Recomendaria o CRIA (0 a 10)?", tipo: "NUMERO" },
-  ]);
-
-  const gestante = await criarPesquisaCRIA("Cartão CRIA — Gestante", gestorId, adminId, [
-    { enunciado: "Nome da beneficiária", tipo: "TEXTO", obrigatoria: true },
-    { enunciado: "Município", tipo: "TEXTO", obrigatoria: true },
-    { enunciado: "Zona", tipo: "ESCOLHA_UNICA", obrigatoria: true, opcoes: zona },
-    { enunciado: "Raça/cor", tipo: "ESCOLHA_UNICA", opcoes: raca },
-    { enunciado: "Início do pré-natal", tipo: "ESCOLHA_UNICA", opcoes: ["Antes de 12 semanas", "Após 12 semanas", "Não fez"] },
-    { enunciado: "Refeições por dia após o CRIA", tipo: "ESCOLHA_UNICA", opcoes: refeicoes },
-    { enunciado: "Gestação de alto risco?", tipo: "ESCOLHA_UNICA", opcoes: simNao },
-    { enunciado: "Recomendaria o CRIA (0 a 10)?", tipo: "NUMERO" },
-  ]);
-
-  await seedRespostas(crianca.id, coletadorId, 18);
-  await seedRespostas(gestante.id, coletadorId, 12);
+  for (const p of PESQUISAS_CARTAO_CRIA) {
+    await criarPesquisaCompleta({ titulo: p.titulo, descricao: p.descricao, secoes: p.secoes, gestorId, adminId });
+  }
 }
 
 async function main() {
   await seedUsuarios();
-  const [admin, gestor, coletador] = await Promise.all([
-    prisma.usuario.findUnique({ where: { email: "admin@cria.al" } }),
-    prisma.usuario.findUnique({ where: { email: "gestor@cria.al" } }),
-    prisma.usuario.findUnique({ where: { email: "coletador@cria.al" } }),
+  const [admin, gestor] = await Promise.all([
+    prisma.usuario.findUnique({ where: { email: `admin${DOMINIO}` } }),
+    prisma.usuario.findUnique({ where: { email: `gestor${DOMINIO}` } }),
   ]);
   await seedMunicipios();
   await seedBeneficios();
-  if (admin && gestor && coletador) {
-    await seedPesquisasCRIA(gestor.id, admin.id, coletador.id);
+  if (admin && gestor) {
+    await seedPesquisasCRIA(gestor.id, admin.id);
   }
   console.log("Seed concluído.");
 }

@@ -1,8 +1,18 @@
-import { useMemo, useState, type FormEvent } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import styled from "styled-components";
 import { ArrowLeft, ArrowRight, Send, CheckCircle2, Check, Search, ListChecks } from "lucide-react";
-import { PESQUISAS_DEMO, totalPerguntas, type Campo, type Secao } from "../data/pesquisaCrianca.js";
+import {
+  usePesquisa,
+  useEnviarResposta,
+  type CampoView,
+  type SecaoView,
+  type ItemRespostaPayload,
+} from "../api/pesquisas.js";
+import { useResposta, useAtualizarResposta } from "../api/respostas.js";
+import { useAuth } from "../auth/useAuth.js";
+import { podeGerenciarPesquisas } from "../auth/permissoes.js";
+import { AcoesPesquisa } from "../../Components/AcoesPesquisa.js";
 import {
   PageHeader,
   PageTitle,
@@ -18,6 +28,13 @@ import {
 } from "../../Styles/ui.js";
 
 type Valor = string | string[] | Record<string, string> | undefined;
+
+// Botão Voltar compacto (menor, sem borda, com padding confortável).
+const BtnVoltar = styled(Button)`
+  padding: 8px 14px;
+  font-size: 13px;
+  border-color: transparent;
+`;
 
 const Wrap = styled.div`
   width: 100%;
@@ -267,15 +284,15 @@ const CheckBadge = styled.div`
 
 const norm = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 
-// Escolha única com mais de 5 opções é renderizada como dropdown.
-function unicaComoDropdown(c: Campo): boolean {
+// Escolha única com mais de 3 opções é renderizada como dropdown.
+function unicaComoDropdown(c: CampoView): boolean {
   if (c.tipo !== "unica") return false;
   if (c.dropdown) return true;
   return (c.opcoes?.length ?? 0) + (c.outro ? 1 : 0) > 3;
 }
 
 // Campos "pequenos" ocupam meia/terço da largura (ficam lado a lado); os demais, a linha toda.
-function ehPequeno(c: Campo): boolean {
+function ehPequeno(c: CampoView): boolean {
   if (c.full) return false;
   if (c.tipo === "texto" || c.tipo === "numero" || c.tipo === "data" || c.tipo === "selecao") return true;
   if (c.tipo === "escala") return (c.escala?.max ?? 10) <= 5;
@@ -302,14 +319,58 @@ function cpfValido(cpf: string): boolean {
 export function DetalhePesquisa() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const pesquisa = PESQUISAS_DEMO.find((p) => p.id === id);
+  const { usuario } = useAuth();
+  const podeGerenciar = podeGerenciarPesquisas(usuario?.papel);
+  const [searchParams] = useSearchParams();
+  const respostaId = searchParams.get("resposta") ?? undefined;
+  const editando = Boolean(respostaId);
+  const { data: pesquisa, isLoading } = usePesquisa(id);
+  const enviar = useEnviarResposta(id);
+  const { data: respostaEdit } = useResposta(respostaId);
+  const atualizar = useAtualizarResposta(respostaId);
   const [respostas, setRespostas] = useState<Record<number, Valor>>({});
   const [busca, setBusca] = useState("");
   const [passo, setPasso] = useState(0);
   const [erro, setErro] = useState("");
   const [enviado, setEnviado] = useState(false);
+  const [prefilled, setPrefilled] = useState(false);
+  const enviando = editando ? atualizar.isPending : enviar.isPending;
 
-  const total = pesquisa ? totalPerguntas(pesquisa) : 0;
+  // Pré-preenche o formulário ao editar um registro existente.
+  useEffect(() => {
+    if (!editando || !pesquisa || prefilled) return;
+    if (respostaEdit === undefined) return; // ainda carregando o registro
+    const inicial: Record<number, Valor> = {};
+    const porId = new Map((respostaEdit?.itens ?? []).map((it) => [it.perguntaId, it]));
+    for (const sec of pesquisa.secoes) {
+      for (const c of sec.campos) {
+        if (!c.id) continue;
+        const it = porId.get(c.id);
+        if (!it) continue;
+        switch (c.tipo) {
+          case "numero":
+            if (it.valorNumero != null) inicial[c.n] = String(it.valorNumero);
+            break;
+          case "data":
+            if (it.valorData) inicial[c.n] = String(it.valorData).slice(0, 10);
+            break;
+          case "multipla":
+            inicial[c.n] = it.opcoesSelecionadas ?? [];
+            break;
+          case "unica":
+          case "selecao":
+            if (it.opcoesSelecionadas?.length) inicial[c.n] = it.opcoesSelecionadas[0];
+            break;
+          default:
+            if (it.valorTexto != null) inicial[c.n] = it.valorTexto;
+        }
+      }
+    }
+    setRespostas(inicial);
+    setPrefilled(true);
+  }, [editando, pesquisa, respostaEdit, prefilled]);
+
+  const total = pesquisa ? pesquisa.secoes.reduce((s, sec) => s + sec.campos.length, 0) : 0;
   const nSecoes = pesquisa?.secoes.length ?? 0;
   const mostrarBusca = total > 10;
   const buscando = busca.trim().length > 0;
@@ -326,19 +387,19 @@ export function DetalhePesquisa() {
   function set(n: number, valor: Valor) {
     setRespostas((r) => ({ ...r, [n]: valor }));
   }
-  function toggleMultipla(c: Campo, opcao: string) {
+  function toggleMultipla(c: CampoView, opcao: string) {
     const atual = (respostas[c.n] as string[] | undefined) ?? [];
     const existe = atual.includes(opcao);
     if (!existe && c.limite && atual.length >= c.limite) return;
     set(c.n, existe ? atual.filter((o) => o !== opcao) : [...atual, opcao]);
   }
-  function respondido(c: Campo): boolean {
+  function respondido(c: CampoView): boolean {
     const v = respostas[c.n];
     if (c.tipo === "multipla") return Array.isArray(v) && v.length > 0;
     if (c.tipo === "grade") return !!v && Object.keys(v).length === (c.grade?.linhas.length ?? 0);
     return v !== undefined && v !== "";
   }
-  function validarCampo(c: Campo): string | null {
+  function validarCampo(c: CampoView): string | null {
     const v = respostas[c.n];
     if (c.obrigatoria && !respondido(c)) return `Responda a pergunta obrigatória ${c.n}: “${c.enunciado}”.`;
     if ((c.formato === "cpf" || c.formato === "nis") && typeof v === "string" && v.length > 0) {
@@ -347,7 +408,7 @@ export function DetalhePesquisa() {
     }
     return null;
   }
-  function erroDaSecao(sec: Secao): string | null {
+  function erroDaSecao(sec: SecaoView): string | null {
     for (const c of sec.campos) {
       const e = validarCampo(c);
       if (e) return e;
@@ -369,20 +430,84 @@ export function DetalhePesquisa() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
-  function onSubmit(e: FormEvent) {
+  // Monta os itens da resposta a partir das perguntas vindas da API (com `id`).
+  function construirItens(): { itens: ItemRespostaPayload[]; municipio?: string } {
+    const itens: ItemRespostaPayload[] = [];
+    let municipio: string | undefined;
+    for (const sec of pesquisa!.secoes) {
+      for (const c of sec.campos) {
+        if (!c.id) continue;
+        const v = respostas[c.n];
+        if (norm(c.enunciado).includes("municipio") && typeof v === "string" && v) municipio = v;
+        const vazio = v === undefined || v === "" || (Array.isArray(v) && v.length === 0);
+        if (vazio) continue;
+        switch (c.tipo) {
+          case "numero": {
+            const num = Number(v);
+            if (Number.isFinite(num)) itens.push({ perguntaId: c.id, valorNumero: num });
+            break;
+          }
+          case "data":
+            itens.push({ perguntaId: c.id, valorData: String(v) });
+            break;
+          case "unica":
+          case "selecao":
+            itens.push({ perguntaId: c.id, opcoesSelecionadas: [String(v)] });
+            break;
+          case "multipla":
+            itens.push({ perguntaId: c.id, opcoesSelecionadas: v as string[] });
+            break;
+          default:
+            itens.push({ perguntaId: c.id, valorTexto: String(v) });
+        }
+      }
+    }
+    return { itens, municipio };
+  }
+
+  async function onSubmit(e: FormEvent) {
     e.preventDefault();
     setErro("");
     if (!pesquisa) return;
     for (let i = 0; i < pesquisa.secoes.length; i++) {
-      const e = erroDaSecao(pesquisa.secoes[i]);
-      if (e) {
+      const err = erroDaSecao(pesquisa.secoes[i]);
+      if (err) {
         setBusca("");
         setPasso(i);
-        return setErro(e);
+        return setErro(err);
       }
     }
-    setEnviado(true);
-    window.scrollTo({ top: 0, behavior: "smooth" });
+
+    const { itens, municipio } = construirItens();
+    if (itens.length === 0) return setErro("Responda ao menos uma pergunta antes de enviar.");
+
+    try {
+      if (editando) await atualizar.mutateAsync({ municipio, itens });
+      else await enviar.mutateAsync({ municipio, itens });
+      setEnviado(true);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    } catch (err) {
+      const status = (err as { response?: { status?: number } }).response?.status;
+      if (status === 403) {
+        setErro("Seu perfil não tem permissão para enviar respostas (apenas Coletador, Gestor ou Admin).");
+      } else if (status === 409) {
+        setErro("Esta pesquisa não está publicada, então não aceita respostas.");
+      } else if (status === 422) {
+        setErro("Alguma resposta é inválida. Revise os campos e tente novamente.");
+      } else {
+        setErro("Não foi possível enviar a resposta. Verifique a conexão e tente novamente.");
+      }
+    }
+  }
+
+  if (isLoading) {
+    return (
+      <Wrap>
+        <Card>
+          <Muted style={{ textAlign: "center", padding: "28px 0" }}>Carregando pesquisa…</Muted>
+        </Card>
+      </Wrap>
+    );
   }
 
   if (!pesquisa) {
@@ -390,10 +515,20 @@ export function DetalhePesquisa() {
       <Wrap>
         <PageHeader>
           <PageTitle>Pesquisa não encontrada</PageTitle>
-          <Button $variant="ghost" onClick={() => navigate("/pesquisas")}>
-            <ArrowLeft size={16} /> Voltar
-          </Button>
+          <BtnVoltar $variant="ghost" onClick={() => navigate("/pesquisas")}>
+            <ArrowLeft size={15} /> Voltar
+          </BtnVoltar>
         </PageHeader>
+      </Wrap>
+    );
+  }
+
+  if (editando && !prefilled) {
+    return (
+      <Wrap>
+        <Card>
+          <Muted style={{ textAlign: "center", padding: "28px 0" }}>Carregando resposta…</Muted>
+        </Card>
       </Wrap>
     );
   }
@@ -405,16 +540,23 @@ export function DetalhePesquisa() {
           <CheckBadge>
             <CheckCircle2 size={34} />
           </CheckBadge>
-          <PageTitle style={{ marginBottom: 8 }}>Resposta registrada!</PageTitle>
+          <PageTitle style={{ marginBottom: 8 }}>{editando ? "Alterações salvas!" : "Resposta registrada!"}</PageTitle>
           <Muted style={{ marginBottom: 20 }}>
-            Obrigada por responder a “{pesquisa.titulo}”. Em modo demonstração a resposta não é
-            persistida — conecte o backend para salvar de verdade.
+            {editando
+              ? "As alterações foram salvas e o registro voltou para revisão do PO."
+              : "Sua resposta foi registrada e aguarda a revisão do PO para entrar nos resultados."}
           </Muted>
           <Acoes style={{ justifyContent: "center" }}>
-            <Button $variant="ghost" onClick={() => navigate("/pesquisas")}>Voltar às pesquisas</Button>
-            <Button onClick={() => { setRespostas({}); setEnviado(false); setPasso(0); }}>
-              <Send size={16} /> Nova resposta
-            </Button>
+            <Button $variant="ghost" onClick={() => navigate("/pesquisas")}>Pesquisas</Button>
+            <Button onClick={() => navigate(`/pesquisas/${id}`)}>Ver resultados</Button>
+            {!editando && (
+              <Button
+                $variant="ghost"
+                onClick={() => { setRespostas({}); setEnviado(false); setPasso(0); }}
+              >
+                <Send size={16} /> Nova resposta
+              </Button>
+            )}
           </Acoes>
         </Sucesso>
       </Wrap>
@@ -428,19 +570,29 @@ export function DetalhePesquisa() {
     <Wrap>
       <form onSubmit={onSubmit}>
         <PageHeader>
-          <div>
-            <PageTitle>{pesquisa.titulo}</PageTitle>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
+              <PageTitle>{pesquisa.titulo}</PageTitle>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <BtnVoltar type="button" $variant="ghost" onClick={() => navigate(`/pesquisas/${id}`)}>
+                  <ArrowLeft size={15} /> Voltar
+                </BtnVoltar>
+                {podeGerenciar && (
+                  <AcoesPesquisa
+                    p={{ id: id ?? "", titulo: pesquisa.titulo, status: pesquisa.status }}
+                    aoExcluir={() => navigate("/pesquisas")}
+                  />
+                )}
+              </div>
+            </div>
             <PageSubtitle>
-              {pesquisa.descricao} · {total} perguntas · {nSecoes} seções
+              {editando ? "Editando um registro · " : ""}
+              {pesquisa.descricao ? `${pesquisa.descricao} · ` : ""}{total} perguntas · {nSecoes} seções
             </PageSubtitle>
             <div style={{ marginTop: 8, display: "flex", gap: 8 }}>
               <Tag $tone="green">{pesquisa.status}</Tag>
-              <Tag $tone="blue">{pesquisa.tipo}</Tag>
             </div>
           </div>
-          <Button type="button" $variant="ghost" onClick={() => navigate("/pesquisas")}>
-            <ArrowLeft size={16} /> Voltar
-          </Button>
         </PageHeader>
 
         {mostrarBusca && (
@@ -511,7 +663,9 @@ export function DetalhePesquisa() {
 
         {buscando ? (
           <Acoes style={{ justifyContent: "flex-end" }}>
-            <Button type="submit"><Send size={16} /> Enviar resposta</Button>
+            <Button type="submit" disabled={enviando}>
+              <Send size={16} /> {enviando ? "Enviando…" : editando ? "Salvar alterações" : "Enviar resposta"}
+            </Button>
           </Acoes>
         ) : (
           <Acoes>
@@ -519,7 +673,9 @@ export function DetalhePesquisa() {
               <ArrowLeft size={16} /> Anterior
             </Button>
             {ultima ? (
-              <Button type="submit"><Send size={16} /> Enviar resposta</Button>
+              <Button type="submit" disabled={enviar.isPending}>
+                <Send size={16} /> {enviar.isPending ? "Enviando…" : "Enviar resposta"}
+              </Button>
             ) : (
               <Button type="button" onClick={proximo}>Próximo <ArrowRight size={16} /></Button>
             )}
@@ -533,7 +689,7 @@ export function DetalhePesquisa() {
     </Wrap>
   );
 
-  function renderCampo(c: Campo) {
+  function renderCampo(c: CampoView) {
     const v = respostas[c.n];
     switch (c.tipo) {
       case "texto":
