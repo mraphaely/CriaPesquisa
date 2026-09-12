@@ -1,9 +1,15 @@
-import { useState, type FormEvent } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useState, type FormEvent } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import styled from "styled-components";
 import { Plus, Trash2, ArrowLeft, Save, FileText, ListChecks } from "lucide-react";
 import { useAuth } from "../auth/useAuth.js";
-import { useCriarPesquisa, type PerguntaPayload, type TipoPergunta } from "../api/pesquisas.js";
+import {
+  useCriarPesquisa,
+  useSalvarEdicao,
+  usePesquisaBruta,
+  type PerguntaPayload,
+  type TipoPergunta,
+} from "../api/pesquisas.js";
 import {
   PageHeader,
   PageTitle,
@@ -132,8 +138,13 @@ const SecIcon = styled.span`
 
 export function NovaPesquisa() {
   const navigate = useNavigate();
+  const { id } = useParams();
+  const editando = Boolean(id);
   const { usuario } = useAuth();
-  const { mutateAsync, isPending } = useCriarPesquisa();
+  const criar = useCriarPesquisa();
+  const salvar = useSalvarEdicao(id);
+  const { data: bruta } = usePesquisaBruta(id);
+  const isPending = editando ? salvar.isPending : criar.isPending;
 
   const [titulo, setTitulo] = useState("");
   const [descricao, setDescricao] = useState("");
@@ -143,6 +154,27 @@ export function NovaPesquisa() {
     { enunciado: "", tipo: "TEXTO", obrigatoria: false, opcoes: [] },
   ]);
   const [erro, setErro] = useState("");
+  const [prefilled, setPrefilled] = useState(false);
+
+  // Ao editar, carrega os dados da pesquisa uma vez.
+  useEffect(() => {
+    if (!editando || !bruta || prefilled) return;
+    setTitulo(bruta.titulo);
+    setDescricao(bruta.descricao ?? "");
+    setInicio(bruta.periodoInicio ? bruta.periodoInicio.slice(0, 10) : "");
+    setFim(bruta.periodoFim ? bruta.periodoFim.slice(0, 10) : "");
+    setPerguntas(
+      bruta.perguntas.length
+        ? bruta.perguntas.map((p) => ({
+            enunciado: p.enunciado,
+            tipo: p.tipo,
+            obrigatoria: p.obrigatoria,
+            opcoes: p.opcoes.map((o) => o.texto),
+          }))
+        : [{ enunciado: "", tipo: "TEXTO", obrigatoria: false, opcoes: [] }],
+    );
+    setPrefilled(true);
+  }, [editando, bruta, prefilled]);
 
   function atualizarPergunta(i: number, patch: Partial<PerguntaForm>) {
     setPerguntas((ps) => ps.map((p, idx) => (idx === i ? { ...p, ...patch } : p)));
@@ -180,37 +212,65 @@ export function NovaPesquisa() {
       }
     }
 
-    const payload = {
-      titulo: titulo.trim(),
-      descricao: descricao.trim() || undefined,
-      responsavelId: usuario?.id ?? "",
-      periodoInicio: inicio || undefined,
-      periodoFim: fim || undefined,
-      perguntas: perguntas.map<PerguntaPayload>((p, i) => ({
-        enunciado: p.enunciado.trim(),
-        tipo: p.tipo,
-        obrigatoria: p.obrigatoria,
-        ordem: i,
-        opcoes: ehEscolha(p.tipo)
-          ? p.opcoes.filter((o) => o.trim()).map((texto, ordem) => ({ texto: texto.trim(), ordem }))
-          : undefined,
-      })),
-    };
+    const perguntasPayload = perguntas.map<PerguntaPayload>((p, i) => ({
+      enunciado: p.enunciado.trim(),
+      tipo: p.tipo,
+      obrigatoria: p.obrigatoria,
+      ordem: i,
+      opcoes: ehEscolha(p.tipo)
+        ? p.opcoes.filter((o) => o.trim()).map((texto, ordem) => ({ texto: texto.trim(), ordem }))
+        : undefined,
+    }));
 
     try {
-      await mutateAsync(payload);
-      navigate("/pesquisas");
+      if (editando) {
+        await salvar.mutateAsync({
+          meta: {
+            titulo: titulo.trim(),
+            descricao: descricao.trim() || undefined,
+            periodoInicio: inicio || undefined,
+            periodoFim: fim || undefined,
+          },
+          perguntas: perguntasPayload,
+          perguntasAntigas: bruta?.perguntas.map((p) => p.id) ?? [],
+        });
+        navigate(`/pesquisas/${id}`);
+      } else {
+        await criar.mutateAsync({
+          titulo: titulo.trim(),
+          descricao: descricao.trim() || undefined,
+          responsavelId: usuario?.id ?? "",
+          periodoInicio: inicio || undefined,
+          periodoFim: fim || undefined,
+          perguntas: perguntasPayload,
+        });
+        navigate("/pesquisas");
+      }
     } catch {
-      setErro("Não foi possível salvar. Conecte o backend + PostgreSQL para persistir a pesquisa.");
+      setErro("Não foi possível salvar. Verifique a conexão com o servidor.");
     }
+  }
+
+  if (editando && !prefilled) {
+    return (
+      <Form as="div">
+        <Card>
+          <Muted style={{ textAlign: "center", padding: "28px 0" }}>Carregando pesquisa…</Muted>
+        </Card>
+      </Form>
+    );
   }
 
   return (
     <Form onSubmit={onSubmit}>
       <PageHeader>
         <div>
-          <PageTitle>Nova pesquisa</PageTitle>
-          <PageSubtitle>Monte o formulário com seções e perguntas de vários tipos</PageSubtitle>
+          <PageTitle>{editando ? "Editar pesquisa" : "Nova pesquisa"}</PageTitle>
+          <PageSubtitle>
+            {editando
+              ? "Ajuste os detalhes e as perguntas (apenas rascunhos podem ser editados)"
+              : "Monte o formulário com perguntas de vários tipos"}
+          </PageSubtitle>
         </div>
         <Button type="button" $variant="ghost" onClick={() => navigate("/pesquisas")}>
           <ArrowLeft size={16} />
@@ -311,9 +371,6 @@ export function NovaPesquisa() {
           {isPending ? "Salvando…" : "Salvar pesquisa"}
         </Button>
       </Acoes>
-      <Muted style={{ textAlign: "center", marginTop: 12, fontSize: 12 }}>
-        Em modo demonstração a pesquisa não é persistida — conecte o backend para salvar de verdade.
-      </Muted>
     </Form>
   );
 }

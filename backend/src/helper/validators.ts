@@ -83,6 +83,14 @@ export const criarRespostaSchema = z.object({
 });
 export type CriarRespostaInput = z.infer<typeof criarRespostaSchema>;
 
+export const atualizarRespostaSchema = criarRespostaSchema;
+export type AtualizarRespostaInput = z.infer<typeof atualizarRespostaSchema>;
+
+export const reprovarRespostaSchema = z.object({
+  observacao: z.string().max(500).optional(),
+});
+export type ReprovarRespostaInput = z.infer<typeof reprovarRespostaSchema>;
+
 // ---------- Usuário ----------
 
 export const criarUsuarioSchema = z.object({

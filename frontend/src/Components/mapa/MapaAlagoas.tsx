@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import styled, { useTheme } from "styled-components";
-import { MUNICIPIOS, corPorValor } from "../../App/data/cria.js";
+import { MUNICIPIOS, corPorValor, type Municipio } from "../../App/data/cria.js";
 
 type Coord = [number, number];
 interface Geometria {
@@ -19,9 +19,6 @@ function norm(s: string): string {
     .replace(/[^a-zA-Z0-9]/g, "")
     .toLowerCase();
 }
-
-const dadoPorMun = new Map(MUNICIPIOS.map((m) => [norm(m.municipio), m]));
-const maxTotal = Math.max(...MUNICIPIOS.map((m) => m.total));
 
 function forEachCoord(geometry: Geometria, cb: (c: Coord) => void) {
   const walk = (coords: unknown): void => {
@@ -105,10 +102,13 @@ const Carregando = styled.div`
   font-weight: 600;
 `;
 
-export function MapaAlagoas() {
+export function MapaAlagoas({ dados = MUNICIPIOS }: { dados?: Municipio[] }) {
   const t = useTheme();
   const [features, setFeatures] = useState<Feature[]>([]);
   const [tt, setTt] = useState<{ x: number; y: number; nome: string; total: number | null } | null>(null);
+
+  const dadoPorMun = useMemo(() => new Map(dados.map((m) => [norm(m.municipio), m])), [dados]);
+  const maxTotal = useMemo(() => Math.max(1, ...dados.map((m) => m.total)), [dados]);
 
   useEffect(() => {
     let ativo = true;
@@ -128,7 +128,7 @@ export function MapaAlagoas() {
       const d = dadoPorMun.get(norm(nome));
       return { nome, total: d ? d.total : null, d: geometriaParaPath(f.geometry, project), fill: d ? corPorValor(d.total, maxTotal) : t.cores.accentSoft };
     });
-  }, [features, t.cores.accentSoft]);
+  }, [features, t.cores.accentSoft, dadoPorMun, maxTotal]);
 
   if (!features.length) return <Carregando>Carregando mapa de Alagoas…</Carregando>;
 
@@ -148,7 +148,7 @@ export function MapaAlagoas() {
       {tt && (
         <Tooltip style={{ left: tt.x + 14, top: tt.y - 10 }}>
           <strong>{tt.nome}</strong>
-          {tt.total !== null ? `${tt.total.toLocaleString("pt-BR")} beneficiários` : "Sem dados na demonstração"}
+          {tt.total !== null ? `${tt.total.toLocaleString("pt-BR")} beneficiários` : "Sem dados"}
         </Tooltip>
       )}
     </Wrap>

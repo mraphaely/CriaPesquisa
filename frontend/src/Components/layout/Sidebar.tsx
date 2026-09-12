@@ -3,11 +3,13 @@ import styled from "styled-components";
 import { LayoutDashboard, ClipboardList, Users, ScrollText, type LucideIcon } from "lucide-react";
 import { Logo } from "../ui/Logo.js";
 import { UsuarioCard } from "./UsuarioCard.js";
+import { useAuth } from "../../App/auth/useAuth.js";
 
 interface ItemNav {
   to: string;
   rotulo: string;
   Icon: LucideIcon;
+  papeis?: string[];
 }
 
 const NAV: { grupo: string; itens: ItemNav[] }[] = [
@@ -21,8 +23,8 @@ const NAV: { grupo: string; itens: ItemNav[] }[] = [
   {
     grupo: "Administração",
     itens: [
-      { to: "/usuarios", rotulo: "Usuários", Icon: Users },
-      { to: "/logs", rotulo: "Auditoria", Icon: ScrollText },
+      { to: "/usuarios", rotulo: "Usuários", Icon: Users, papeis: ["ADMIN"] },
+      { to: "/logs", rotulo: "Auditoria", Icon: ScrollText, papeis: ["ADMIN"] },
     ],
   },
 ];
@@ -159,6 +161,11 @@ const Rodape = styled.div<{ $colapsada: boolean }>`
 `;
 
 export function Sidebar({ colapsada }: { colapsada: boolean }) {
+  const { usuario } = useAuth();
+  const podeVer = (papeis?: string[]) => !papeis || (usuario != null && papeis.includes(usuario.papel));
+  const grupos = NAV.map((g) => ({ ...g, itens: g.itens.filter((i) => podeVer(i.papeis)) })).filter(
+    (g) => g.itens.length > 0,
+  );
   return (
     <Aside aria-label="navegação principal" $colapsada={colapsada}>
       <Topo>
@@ -166,7 +173,7 @@ export function Sidebar({ colapsada }: { colapsada: boolean }) {
         <Linha />
       </Topo>
       <Grupos>
-        {NAV.map((g) => (
+        {grupos.map((g) => (
           <div key={g.grupo} style={{ display: "contents" }}>
             <Grupo $colapsada={colapsada}>{g.grupo}</Grupo>
             {g.itens.map(({ to, rotulo, Icon }) => (

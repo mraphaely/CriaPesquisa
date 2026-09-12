@@ -130,13 +130,19 @@ export const TextInput = styled.input`
 
 export const Select = styled.select`
   font-size: 14px;
-  padding: 11px 13px;
+  padding: 11px 40px 11px 13px;
   border-radius: 11px;
   border: 1.5px solid ${(p) => p.theme.cores.border};
-  background: ${(p) => p.theme.cores.surface};
+  background-color: ${(p) => p.theme.cores.surface};
   color: ${(p) => p.theme.cores.text};
   outline: none;
   cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23${(p) => p.theme.cores.textMuted.replace("#", "")}' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
   &:focus {
     border-color: ${(p) => p.theme.cores.accent};

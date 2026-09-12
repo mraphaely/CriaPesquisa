@@ -55,8 +55,10 @@ export async function atualizar(req: Request, res: Response) {
 
   const atual = await pesquisaModel.obterPorId(id);
   if (!atual) throw new HttpError(404, "NAO_ENCONTRADA", "Pesquisa não encontrada");
-  if (atual.status !== "RASCUNHO") {
-    throw new HttpError(409, "PESQUISA_PUBLICADA", "pesquisa publicada não pode ser editada");
+  // Edição altera apenas metadados (título, descrição, responsável, período) — não
+  // mexe nas perguntas —, então é seguro em qualquer status, exceto arquivada.
+  if (atual.status === "ARQUIVADA") {
+    throw new HttpError(409, "PESQUISA_ARQUIVADA", "pesquisa arquivada não pode ser editada");
   }
 
   const dados = req.body as AtualizarPesquisaInput;

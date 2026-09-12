@@ -21,6 +21,12 @@ enum StatusPesquisa {
   ARQUIVADA
 }
 
+enum StatusResposta {
+  PENDENTE
+  APROVADA
+  REPROVADA
+}
+
 enum TipoPergunta {
   TEXTO
   NUMERO
@@ -38,6 +44,8 @@ enum AcaoLog {
   PUBLICAR
   ENCERRAR
   ARQUIVAR
+  APROVAR
+  REPROVAR
 }
 
 model Usuario {
@@ -53,6 +61,7 @@ model Usuario {
   pesquisasResponsavel Pesquisa[]        @relation("PesquisaResponsavel")
   pesquisasCriadas     Pesquisa[]        @relation("PesquisaCriadaPor")
   respostasColetadas   Resposta[]        @relation("RespostaColetadaPor")
+  respostasRevisadas   Resposta[]        @relation("RespostaRevisadaPor")
   logs                 LogAlteracao[]
   versoes              PesquisaVersao[]
 }
@@ -159,27 +168,33 @@ model OpcaoPergunta {
 }
 
 model Resposta {
-  id          String    @id @default(uuid())
-  pesquisaId  String
-  coletadorId String
-  municipio   String?
-  unidade     String?
-  regional    String?
-  enviadaEm   DateTime  @default(now())
-  ip          String?
-  deletedAt   DateTime?
-  deletedById String?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id           String         @id @default(uuid())
+  pesquisaId   String
+  coletadorId  String
+  municipio    String?
+  unidade      String?
+  regional     String?
+  status       StatusResposta @default(PENDENTE)
+  observacao   String?
+  revisadoPorId String?
+  revisadoEm   DateTime?
+  enviadaEm    DateTime       @default(now())
+  ip           String?
+  deletedAt    DateTime?
+  deletedById  String?
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
 
-  pesquisa  Pesquisa       @relation(fields: [pesquisaId], references: [id])
-  coletador Usuario        @relation("RespostaColetadaPor", fields: [coletadorId], references: [id])
-  itens     ItemResposta[]
+  pesquisa    Pesquisa       @relation(fields: [pesquisaId], references: [id])
+  coletador   Usuario        @relation("RespostaColetadaPor", fields: [coletadorId], references: [id])
+  revisadoPor Usuario?       @relation("RespostaRevisadaPor", fields: [revisadoPorId], references: [id])
+  itens       ItemResposta[]
 
   @@index([pesquisaId])
   @@index([municipio])
   @@index([enviadaEm])
   @@index([deletedAt])
+  @@index([status])
 }
 
 model ItemResposta {
