@@ -1,11 +1,20 @@
 import { createContext, useMemo, useState, type ReactNode } from "react";
 
-export type Usuario = { id: string; nome: string; email: string; papel: string; foto?: string };
+export type Usuario = {
+  id: string;
+  nome: string;
+  email: string;
+  papel: string;
+  foto?: string;
+  /** Conta com senha definida por outra pessoa: precisa trocar antes de usar. */
+  precisaTrocarSenha?: boolean;
+};
 export type AuthValor = {
   usuario: Usuario | null;
   token: string | null;
   autenticado: boolean;
   entrar: (t: string, u: Usuario, lembrar?: boolean) => void;
+  atualizarUsuario: (dados: Partial<Usuario>) => void;
   sair: () => void;
 };
 
@@ -35,6 +44,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         outro.removeItem("usuario");
         setToken(t);
         setUsuario(u);
+      },
+      /** Atualiza o usuário guardado sem refazer login (ex.: após trocar a senha). */
+      atualizarUsuario: (dados) => {
+        setUsuario((atual) => {
+          if (!atual) return atual;
+          const novo = { ...atual, ...dados };
+          const store = localStorage.getItem("token") ? localStorage : sessionStorage;
+          store.setItem("usuario", JSON.stringify(novo));
+          return novo;
+        });
       },
       sair: () => {
         localStorage.removeItem("token");

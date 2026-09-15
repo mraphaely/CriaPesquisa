@@ -145,6 +145,9 @@ export function NovaPesquisa() {
   const salvar = useSalvarEdicao(id);
   const { data: bruta } = usePesquisaBruta(id);
   const isPending = editando ? salvar.isPending : criar.isPending;
+  // Depois de publicada, a pesquisa já tem respostas atreladas às perguntas:
+  // mexer nelas invalidaria o que foi coletado. Metadados seguem editáveis.
+  const perguntasEditaveis = !editando || !bruta || bruta.status === "RASCUNHO";
 
   const [titulo, setTitulo] = useState("");
   const [descricao, setDescricao] = useState("");
@@ -233,6 +236,7 @@ export function NovaPesquisa() {
           },
           perguntas: perguntasPayload,
           perguntasAntigas: bruta?.perguntas.map((p) => p.id) ?? [],
+          perguntasEditaveis,
         });
         navigate(`/pesquisas/${id}`);
       } else {
@@ -267,9 +271,11 @@ export function NovaPesquisa() {
         <div>
           <PageTitle>{editando ? "Editar pesquisa" : "Nova pesquisa"}</PageTitle>
           <PageSubtitle>
-            {editando
-              ? "Ajuste os detalhes e as perguntas (apenas rascunhos podem ser editados)"
-              : "Monte o formulário com perguntas de vários tipos"}
+            {!editando
+              ? "Monte o formulário com perguntas de vários tipos"
+              : perguntasEditaveis
+                ? "Ajuste os detalhes e as perguntas desta pesquisa"
+                : "Ajuste os detalhes — as perguntas ficam travadas depois da publicação"}
           </PageSubtitle>
         </div>
         <Button type="button" $variant="ghost" onClick={() => navigate("/pesquisas")}>
@@ -308,6 +314,12 @@ export function NovaPesquisa() {
           <SecIcon><ListChecks size={19} /></SecIcon>
           <SectionTitle style={{ margin: 0 }}>Perguntas</SectionTitle>
         </SecHeader>
+        {!perguntasEditaveis && (
+          <Banner $tone="warn" role="status" style={{ marginBottom: 14 }}>
+            Esta pesquisa já foi publicada: as perguntas não podem mais ser alteradas, porque há respostas
+            ligadas a elas. Para mudar o questionário, crie uma nova pesquisa.
+          </Banner>
+        )}
         {perguntas.map((p, i) => (
           <PerguntaCard key={i}>
             <PerguntaTopo>

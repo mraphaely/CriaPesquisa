@@ -24,10 +24,13 @@ function renderLogin() {
 
 describe("Login", () => {
   it("mostra erro quando as credenciais são inválidas", async () => {
-    (api.post as any).mockRejectedValueOnce(new Error("401"));
+    // Erro no formato que o axios realmente entrega: o componente decide a
+    // mensagem por `response.status`, e um Error solto cairia no ramo de "sem
+    // conexão com o servidor".
+    (api.post as any).mockRejectedValueOnce({ response: { status: 401 } });
     renderLogin();
     await userEvent.type(screen.getByLabelText(/e-mail/i), "x@y.z");
-    await userEvent.type(screen.getByLabelText(/senha/i), "errada");
+    await userEvent.type(screen.getByLabelText(/^senha$/i), "errada");
     await userEvent.click(screen.getByRole("button", { name: /entrar/i }));
     expect(await screen.findByRole("alert")).toHaveTextContent(/inválidos/i);
   });
@@ -36,7 +39,7 @@ describe("Login", () => {
     (api.post as any).mockResolvedValueOnce({ data: { token: "abc", usuario: { id: "1", nome: "A", email: "x@y.z", papel: "ADMIN" } } });
     renderLogin();
     await userEvent.type(screen.getByLabelText(/e-mail/i), "x@y.z");
-    await userEvent.type(screen.getByLabelText(/senha/i), "cria123");
+    await userEvent.type(screen.getByLabelText(/^senha$/i), "cria123");
     await userEvent.click(screen.getByRole("button", { name: /entrar/i }));
     await vi.waitFor(() => expect(localStorage.getItem("token")).toBe("abc"));
   });

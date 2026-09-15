@@ -1,6 +1,19 @@
 import styled from "styled-components";
-import { LogOut } from "lucide-react";
+import { LogOut, KeyRound } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../App/auth/useAuth.js";
+
+const Grupo = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
+
+  @media (max-width: 860px) {
+    flex-direction: row;
+    width: auto;
+  }
+`;
 
 const Btn = styled.button`
   display: flex;
@@ -30,14 +43,35 @@ const Rotulo = styled.span<{ $colapsada: boolean }>`
   @media (max-width: 860px) { display: none; }
 `;
 
+const BtnNeutro = styled(Btn)`
+  color: ${(p) => p.theme.cores.textMuted};
+  font-weight: 600;
+  &:hover {
+    background: ${(p) => p.theme.cores.accentSoft};
+    color: ${(p) => p.theme.cores.accent};
+  }
+`;
+
 export function UsuarioCard({ colapsada }: { colapsada: boolean }) {
   const { usuario, sair } = useAuth();
+  const navigate = useNavigate();
   if (!usuario) return null;
 
   return (
-    <Btn type="button" onClick={sair} title="Sair" aria-label="sair">
-      <LogOut size={19} />
-      <Rotulo $colapsada={colapsada}>Sair</Rotulo>
-    </Btn>
+    <Grupo>
+      <BtnNeutro
+        type="button"
+        onClick={() => navigate("/trocar-senha")}
+        title="Trocar senha"
+        aria-label="trocar senha"
+      >
+        <KeyRound size={18} />
+        <Rotulo $colapsada={colapsada}>Trocar senha</Rotulo>
+      </BtnNeutro>
+      <Btn type="button" onClick={sair} title="Sair" aria-label="sair">
+        <LogOut size={19} />
+        <Rotulo $colapsada={colapsada}>Sair</Rotulo>
+      </Btn>
+    </Grupo>
   );
 }
