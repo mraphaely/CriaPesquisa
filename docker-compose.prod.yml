@@ -1,0 +1,73 @@
+# Subida de produção: banco + API + front atrás de um nginx.
+#
+#   cp .env.prod.example .env.prod   # preencha os valores
+#   docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build
+#
+# As migrations são aplicadas pelo serviço `migracao`, que roda uma vez e sai —
+# a API só sobe depois que ele termina bem. Nada de aplicar schema na subida da
+# aplicação: com mais de uma réplica, duas tentariam migrar ao mesmo tempo.
+services:
+  postgres:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - criapesquisa_pgdata:/var/lib/postgresql/data
+    # Sem `ports`: o banco fica acessível só na rede interna do compose. Para
+    # administrar de fora, use um túnel — não exponha 5432 na internet.
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  migracao:
+    build:
+      context: ./backend
+    command: ["npx", "prisma", "migrate", "deploy"]
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
+  api:
+    build:
+      context: ./backend
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 3333
+      DATABASE_URL: ${DATABASE_URL}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRES: ${JWT_EXPIRES:-8h}
+      CORS_ORIGIN: ${CORS_ORIGIN}
+      # 1 = há um nginx na frente; é dele que vem o X-Forwarded-For usado pelo
+      # rate limit de login.
+      TRUST_PROXY: "1"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migracao:
+        condition: service_completed_successfully
+
+  web:
+    build:
+      context: ./frontend
+      args:
+        # Mesma origem do front: o nginx encaminha /api para a API.
+        VITE_API_URL: /api
+        VITE_EMAIL_DOMINIO: ${VITE_EMAIL_DOMINIO}
+        VITE_SENHA_PADRAO: ""
+    restart: unless-stopped
+    ports:
+      - "${WEB_PORT:-8080}:80"
+    depends_on:
+      - api
+
+volumes:
+  criapesquisa_pgdata:

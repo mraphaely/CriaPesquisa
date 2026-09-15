@@ -14,6 +14,8 @@ Todos usam o Prisma client (`src/config/prisma.js`) — o Postgres precisa estar
 | `pesquisa-gestante-completa.ts` | (Re)cria a pesquisa **Cartão CRIA — Gestante** (62 perguntas). Idempotente. | Sim |
 | `migrar-credenciais.ts` | Padroniza e-mail (definido em `SEED_EMAIL_DOMINIO`) e senha das contas-base. Idempotente. | Sim |
 | `aprovar-existentes.ts` | Aprova respostas que ficaram `PENDENTE`. | Sim |
+| `backup.ts` | Gera `backups/criapesquisa-<data>.dump` e aplica a retenção. | Não (leitura) |
+| `restaurar.ts` | Restaura um `.dump` por cima do banco atual. Exige `--confirmar`. | **Sim — destrutivo** |
 
 ## Fonte da verdade das pesquisas
 
@@ -25,5 +27,5 @@ há um único lugar para editar. Depois de alterar, rode o builder correspondent
 
 ## Recriar do zero
 
-`npx prisma db push` → `npm run seed` recria usuários + as duas pesquisas reais
+`npm run prisma:deploy` → `npm run seed` recria usuários + as duas pesquisas reais
 (sem respostas) + os dados de painel (municípios/benefícios).
