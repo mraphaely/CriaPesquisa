@@ -6,5 +6,18 @@ export default defineConfig({
   // Não observar public/: evita crash EBUSY do watcher com arquivos travados
   // pelo OneDrive (a pasta public é servida estaticamente, não precisa de HMR).
   server: { port: 5173, watch: { ignored: ["**/public/**"] } },
+  build: {
+    rollupOptions: {
+      output: {
+        // Separa as bibliotecas do código da aplicação: elas mudam pouco, então
+        // o navegador reaproveita o cache entre deploys em vez de rebaixar tudo.
+        manualChunks: {
+          react: ["react", "react-dom", "react-router-dom"],
+          grafico: ["chart.js", "react-chartjs-2"],
+          dados: ["@tanstack/react-query", "axios"],
+        },
+      },
+    },
+  },
   test: { globals: true, environment: "jsdom", setupFiles: ["./vitest.setup.ts"] },
 });

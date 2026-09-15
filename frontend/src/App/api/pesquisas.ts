@@ -92,14 +92,28 @@ export function usePesquisaBruta(id: string | undefined) {
   });
 }
 
-/** Salva a edição: atualiza os metadados e re-sincroniza as perguntas (apenas rascunhos). */
+export interface SalvarEdicaoPayload {
+  meta: AtualizarPesquisaMeta;
+  perguntas: PerguntaPayload[];
+  perguntasAntigas: string[];
+  /**
+   * Só rascunho aceita mexer nas perguntas. Fora disso o backend recusa a rota
+   * de perguntas (409) — e, como os metadados já teriam sido salvos antes, a
+   * pessoa ficaria com metade da edição gravada e um erro sem explicação.
+   */
+  perguntasEditaveis: boolean;
+}
+
+/** Salva a edição: metadados sempre; perguntas apenas quando a pesquisa é rascunho. */
 export function useSalvarEdicao(id: string | undefined) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (dados: { meta: AtualizarPesquisaMeta; perguntas: PerguntaPayload[]; perguntasAntigas: string[] }) => {
+    mutationFn: async (dados: SalvarEdicaoPayload) => {
       await api.put(`/pesquisas/${id}`, dados.meta);
-      for (const pid of dados.perguntasAntigas) await api.delete(`/perguntas/${pid}`);
-      for (const pergunta of dados.perguntas) await api.post(`/pesquisas/${id}/perguntas`, pergunta);
+      if (dados.perguntasEditaveis) {
+        for (const pid of dados.perguntasAntigas) await api.delete(`/perguntas/${pid}`);
+        for (const pergunta of dados.perguntas) await api.post(`/pesquisas/${id}/perguntas`, pergunta);
+      }
       return { id };
     },
     onSuccess: () => {

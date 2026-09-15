@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import styled from "styled-components";
 import { Outlet } from "react-router-dom";
 import { Sidebar } from "./Sidebar.js";
@@ -16,6 +16,13 @@ const Main = styled.div`
   display: flex;
   flex-direction: column;
   min-width: 0;
+`;
+
+const Carregando = styled.div`
+  padding: 40px 0;
+  text-align: center;
+  font-size: 13px;
+  color: ${(p) => p.theme.cores.textMuted};
 `;
 
 const Conteudo = styled.div`
@@ -43,7 +50,12 @@ export function Layout() {
       <Main>
         <Topbar colapsada={colapsada} onToggle={alternar} />
         <Conteudo>
-          <Outlet />
+          {/* As telas pesadas (gráficos, construtor) chegam por carregamento
+              sob demanda — quem só responde formulário em campo não baixa o
+              Chart.js. O Suspense cobre esse intervalo. */}
+          <Suspense fallback={<Carregando role="status">Carregando…</Carregando>}>
+            <Outlet />
+          </Suspense>
         </Conteudo>
         <Footer />
       </Main>
