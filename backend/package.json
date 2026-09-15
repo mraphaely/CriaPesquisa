@@ -12,8 +12,11 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "prisma:migrate": "prisma migrate dev",
+    "prisma:deploy": "prisma migrate deploy",
     "prisma:generate": "prisma generate",
-    "seed": "tsx prisma/seed.ts"
+    "seed": "tsx prisma/seed.ts",
+    "backup": "tsx scripts/backup.ts",
+    "restaurar": "tsx scripts/restaurar.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
@@ -26,6 +29,7 @@
     "exceljs": "^4.4.0",
     "express": "^4.19.2",
     "express-async-errors": "^3.1.1",
+    "express-rate-limit": "^8.7.0",
     "helmet": "^7.1.0",
     "jsonwebtoken": "^9.0.2",
     "pino": "^9.3.2",

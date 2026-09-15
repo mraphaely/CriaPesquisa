@@ -1,5 +1,6 @@
 import type { Request, Response } from "express";
 import { logModel } from "../models/logModel.js";
+import { parsePaginacao } from "../helper/paginacao.js";
 
 function paramStr(v: unknown): string | undefined {
   return typeof v === "string" && v.length > 0 ? v : undefined;
@@ -7,8 +8,7 @@ function paramStr(v: unknown): string | undefined {
 
 export async function listarLogs(req: Request, res: Response) {
   const q = req.query;
-  const page = q.page ? Number(q.page) : 1;
-  const pageSize = q.pageSize ? Number(q.pageSize) : 20;
+  const { page, pageSize } = parsePaginacao(q, 20);
   const { total, itens } = await logModel.listar({
     entidade: paramStr(q.entidade),
     entidadeId: paramStr(q.entidadeId),

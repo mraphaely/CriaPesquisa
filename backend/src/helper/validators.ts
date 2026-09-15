@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { senhaForte } from "./politicaSenha.js";
 
 export const loginSchema = z.object({
   email: z.string().email(),
@@ -96,7 +97,7 @@ export type ReprovarRespostaInput = z.infer<typeof reprovarRespostaSchema>;
 export const criarUsuarioSchema = z.object({
   nome: z.string().min(1),
   email: z.string().email(),
-  senha: z.string().min(6),
+  senha: senhaForte,
   papel: z.enum(["ADMIN", "GESTOR", "COLETADOR", "VISUALIZADOR"]),
 });
 export type CriarUsuarioInput = z.infer<typeof criarUsuarioSchema>;
@@ -106,9 +107,20 @@ export const atualizarUsuarioSchema = z.object({
   email: z.string().email().optional(),
   papel: z.enum(["ADMIN", "GESTOR", "COLETADOR", "VISUALIZADOR"]).optional(),
   ativo: z.boolean().optional(),
-  senha: z.string().min(6).optional(),
+  senha: senhaForte.optional(),
 });
 export type AtualizarUsuarioInput = z.infer<typeof atualizarUsuarioSchema>;
+
+export const trocarSenhaSchema = z
+  .object({
+    senhaAtual: z.string().min(1),
+    senhaNova: senhaForte,
+  })
+  .refine((dados) => dados.senhaAtual !== dados.senhaNova, {
+    message: "A nova senha precisa ser diferente da atual.",
+    path: ["senhaNova"],
+  });
+export type TrocarSenhaInput = z.infer<typeof trocarSenhaSchema>;
 
 // ---------- Atualização parcial de Pergunta ----------
 // `perguntaSchema` usa `.refine()`, que impede `.partial()`. Este schema aceita

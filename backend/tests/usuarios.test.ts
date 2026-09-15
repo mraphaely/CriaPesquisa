@@ -29,7 +29,7 @@ describe("usuarios", () => {
     const res = await request(app)
       .post("/api/usuarios")
       .set("Authorization", `Bearer ${tokenAdmin}`)
-      .send({ nome: "X", email: "x@cria.al", senha: "secret1", papel: "COLETADOR" });
+      .send({ nome: "X", email: "x@cria.al", senha: "colina verde 42", papel: "COLETADOR" });
 
     expect(res.status).toBe(201);
     expect(usuarioModel.criar).toHaveBeenCalledOnce();
@@ -40,7 +40,7 @@ describe("usuarios", () => {
     const res = await request(app)
       .post("/api/usuarios")
       .set("Authorization", `Bearer ${tokenGestor}`)
-      .send({ nome: "X", email: "x@cria.al", senha: "secret1", papel: "COLETADOR" });
+      .send({ nome: "X", email: "x@cria.al", senha: "colina verde 42", papel: "COLETADOR" });
     expect(res.status).toBe(403);
   });
 
@@ -62,7 +62,7 @@ describe("usuarios", () => {
     const res = await request(app)
       .post("/api/usuarios")
       .set("Authorization", `Bearer ${tokenAdmin}`)
-      .send({ nome: "X", email: "x@cria.al", senha: "secret1", papel: "COLETADOR" });
+      .send({ nome: "X", email: "x@cria.al", senha: "colina verde 42", papel: "COLETADOR" });
     expect(res.status).toBe(409);
   });
 });

@@ -84,8 +84,24 @@ describe("POST /api/pesquisas/:id/publicar", () => {
 });
 
 describe("PUT /api/pesquisas/:id", () => {
-  it("7) pesquisa PUBLICADA -> 409", async () => {
+  // Editar aqui mexe só em metadados (título, descrição, responsável, período);
+  // as perguntas têm rota própria e essa sim exige RASCUNHO. Por isso corrigir o
+  // título de uma pesquisa já publicada é permitido.
+  it("7) pesquisa PUBLICADA aceita edição de metadados -> 200", async () => {
     vi.mocked(pesquisaModel.obterPorId).mockResolvedValue({ id: "p1", status: "PUBLICADA" } as never);
+    vi.mocked(pesquisaModel.atualizar).mockResolvedValue({ id: "p1", titulo: "Novo título" } as never);
+
+    const res = await request(app)
+      .put("/api/pesquisas/p1")
+      .set("Authorization", `Bearer ${tokenGestor}`)
+      .send({ titulo: "Novo título" });
+
+    expect(res.status).toBe(200);
+    expect(pesquisaModel.atualizar).toHaveBeenCalledWith("p1", { titulo: "Novo título" });
+  });
+
+  it("7b) pesquisa ARQUIVADA -> 409", async () => {
+    vi.mocked(pesquisaModel.obterPorId).mockResolvedValue({ id: "p1", status: "ARQUIVADA" } as never);
 
     const res = await request(app)
       .put("/api/pesquisas/p1")
@@ -93,6 +109,8 @@ describe("PUT /api/pesquisas/:id", () => {
       .send({ titulo: "Novo título" });
 
     expect(res.status).toBe(409);
+    expect(res.body.error.code).toBe("PESQUISA_ARQUIVADA");
+    expect(pesquisaModel.atualizar).not.toHaveBeenCalled();
   });
 });
 

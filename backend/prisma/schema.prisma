@@ -55,6 +55,9 @@ model Usuario {
   senhaHash String
   papel     PapelUsuario
   ativo     Boolean      @default(true)
+  // Conta criada por um admin (ou pelo seed) nasce com senha que outra pessoa
+  // conhece: até a troca, o acesso não identifica quem de fato agiu.
+  precisaTrocarSenha Boolean @default(false)
   createdAt DateTime     @default(now())
   updatedAt DateTime     @updatedAt
 
