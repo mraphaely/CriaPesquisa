@@ -6,10 +6,13 @@ dist/
 build/
 *.tsbuildinfo
 
-# Ambiente
+# Ambiente — ignora qualquer .env e reabre só os modelos.
+# Regra ampla de propósito: .env.prod carrega senha do banco e JWT_SECRET, e
+# listar variante por variante é como um arquivo desses acaba versionado.
 .env
-.env.local
-.env.*.local
+.env.*
+!.env.example
+!.env.*.example
 
 # Testes / cobertura
 coverage/

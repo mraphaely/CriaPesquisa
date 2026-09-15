@@ -36,7 +36,7 @@ cd backend
 npm install
 cp .env.example .env        # ajuste os valores
 npm run db                  # sobe o Postgres embutido na porta 5433 (deixe aberto)
-npx prisma db push          # cria o schema
+npm run prisma:deploy       # aplica as migrations e cria o schema
 npx prisma generate
 npm run seed                # popula usuários, municípios e as pesquisas
 npm run dev                 # API em http://localhost:3333/api
@@ -66,6 +66,7 @@ npm run dev                 # http://localhost:5173
 | `SEED_PASSWORD` | não | Senha inicial das contas criadas pelo seed |
 | `SEED_EMAIL_DOMINIO` | não | Domínio dos e-mails das contas-base (padrão `@exemplo.local`) |
 | `CORS_ORIGIN` | não | Origens permitidas, separadas por vírgula |
+| `TRUST_PROXY` | **atrás de proxy** | Quantos proxies existem na frente da API (com um nginx, `1`). Sem isso o rate limit enxerga o IP do proxy e trata a instituição inteira como um IP só |
 
 ### `frontend/.env`
 
@@ -85,6 +86,10 @@ npm run dev                 # http://localhost:5173
 | `npm run db` | Sobe o Postgres embutido (porta 5433) |
 | `npm run dev:full` | Banco + API juntos |
 | `npm run seed` | Popula o banco |
+| `npm run prisma:deploy` | Aplica as migrations pendentes (usar no deploy) |
+| `npm run prisma:migrate` | Cria uma nova migration a partir de mudanças no schema (dev) |
+| `npm run backup` | Gera um dump em `backups/` e aplica a retenção |
+| `npm run restaurar -- <arquivo> --confirmar` | Restaura um dump (destrutivo) |
 | `npm run build` / `npm start` | Compila / roda a build |
 | `npm test` | Testes (Vitest) |
 
@@ -99,7 +104,79 @@ npm run dev                 # http://localhost:5173
 ## Perfis de acesso
 
 O seed cria quatro contas-base, uma por papel: **ADMIN**, **GESTOR**, **COLETADOR** e **VISUALIZADOR**.
-A senha delas vem de `SEED_PASSWORD`. **Troque-a antes de qualquer uso real.**
+A senha delas vem de `SEED_PASSWORD`, e as quatro nascem marcadas como **senha provisória**.
+
+### Primeiro acesso
+
+Toda conta criada pelo seed ou por um administrador nasce com senha que **outra pessoa conhece**.
+Enquanto ela não for trocada, o sistema não consegue afirmar quem agiu — e é exatamente isso
+que a trilha de auditoria precisa afirmar. Por isso:
+
+1. Quem recebe a conta entra com a senha provisória.
+2. O sistema leva direto para a tela de troca e **não libera nenhuma outra tela** antes disso.
+3. A partir daí, só essa pessoa sabe a senha.
+
+Depois, a troca fica disponível a qualquer momento em **Trocar senha**, no menu lateral.
+Um administrador pode redefinir a senha de alguém que perdeu o acesso — e essa senha também
+entra como provisória.
+
+### Política de senha
+
+Mínimo de **10 caracteres**, com recusa de sequências (`123456…`), repetições (`aaaaaa…`),
+senhas só numéricas e palavras óbvias (`senha`, `cria`, `admin`…).
+
+Não exigimos maiúscula, número e símbolo de propósito: seguindo a orientação atual do
+NIST (SP 800-63B), regra de composição produz `Senha@123` e senha colada no monitor.
+Comprimento e lista de bloqueio protegem mais. Uma frase curta é uma ótima senha.
+
+## Backup
+
+Os dados são de beneficiários: backup não é opcional, e **backup que nunca foi restaurado
+é só um arquivo**. Exercite a restauração num banco de teste de tempos em tempos.
+
+```bash
+cd backend
+npm run backup                                    # gera backups/criapesquisa-<data>.dump
+npm run restaurar -- backups/<arquivo>.dump --confirmar
+```
+
+Requer o `pg_dump`/`pg_restore` do pacote cliente do PostgreSQL (o Postgres embutido de
+desenvolvimento traz só os binários de servidor). Se não estiverem no PATH, aponte
+`PG_DUMP` e `PG_RESTORE`.
+
+| Variável | Padrão | Para quê |
+|---|---|---|
+| `BACKUP_DIR` | `backups` | Onde gravar |
+| `BACKUP_RETENCAO` | `30` | Quantos dumps manter (nunca apaga o último) |
+
+**Agende a execução** — no Linux, um `cron` diário; no Windows, o Agendador de Tarefas:
+
+```cron
+0 3 * * * cd /opt/criapesquisa/backend && npm run backup >> /var/log/criapesquisa-backup.log 2>&1
+```
+
+`backups/` está no `.gitignore` e precisa continuar assim: os dumps contêm respostas,
+IPs e hashes de senha. Guarde uma cópia **fora do servidor** — backup que mora junto do
+banco não protege contra perda da máquina.
+
+## Deploy
+
+```bash
+cp .env.prod.example .env.prod      # preencha JWT_SECRET, senhas e domínios
+docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build
+```
+
+Sobe quatro serviços: `postgres`, `migracao` (aplica as migrations e sai), `api` e `web`
+(nginx servindo o front e encaminhando `/api`). A API só inicia depois que a migração
+termina bem — nada de aplicar schema na subida da aplicação.
+
+Pontos que o deploy assume:
+
+- **TLS termina antes**, num proxy à frente do `web`. Não sirva o sistema em HTTP na internet.
+- `TRUST_PROXY=1` já vem configurado no compose: é o que faz o rate limit de login enxergar
+  o IP real de quem chama, e não o do nginx.
+- O Postgres **não expõe porta no host** — acesso administrativo só por túnel.
+- O primeiro `npm run seed` precisa rodar uma vez para criar as contas-base.
 
 ## Segurança e dados pessoais
 
@@ -109,6 +186,13 @@ Este sistema lida com dados de beneficiários (LGPD). Cuidados adotados no repos
 - Nenhuma credencial real fica no código: senhas e segredos vêm de variáveis de ambiente.
 - `JWT_SECRET` é obrigatório em produção (sem fallback previsível).
 - As alterações são registradas em log de auditoria, com exclusão lógica (soft-delete).
+- O login tem limite de 10 tentativas malsucedidas por IP a cada 15 minutos (login correto não conta).
+- Senha só pode ser trocada pela própria pessoa; conta com senha definida por terceiro fica travada até a troca.
+- `/api/health` consulta o banco: a API não se declara saudável se não consegue ler dados.
+- `SIGTERM` encerra com calma — as requisições em andamento terminam antes do processo sair.
+- As listagens têm teto de 200 itens por página: ninguém leva a base inteira numa requisição só.
+- O log de acesso registra método, rota, IP, status e tempo — com `Authorization` e `Cookie` redigidos.
+- O schema evolui por migrations versionadas (`prisma/migrations/`), não por `db push`.
 
 ## Direitos e licença
 
