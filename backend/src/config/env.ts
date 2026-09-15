@@ -19,8 +19,22 @@ function segredoObrigatorio(name: string, fallbackDev: string): string {
   return fallbackDev;
 }
 
+// Atrás de proxy reverso (nginx, load balancer) todo request chega com o IP do
+// proxy: sem isto o rate limit contaria a instituição inteira como um IP só e
+// bloquearia todo mundo junto. Continua desligado por padrão — confiar no
+// X-Forwarded-For sem proxy na frente deixaria qualquer um forjar o próprio IP.
+function trustProxy(): boolean | number | string {
+  const valor = process.env.TRUST_PROXY?.trim();
+  if (!valor) return false;
+  if (valor === "true") return true;
+  if (valor === "false") return false;
+  const numero = Number(valor);
+  return Number.isFinite(numero) ? numero : valor;
+}
+
 export const env = {
   PORT: Number(process.env.PORT ?? 3333),
+  TRUST_PROXY: trustProxy(),
   DATABASE_URL: required("DATABASE_URL"),
   JWT_SECRET: segredoObrigatorio("JWT_SECRET", "dev-secret-local"),
   JWT_EXPIRES: process.env.JWT_EXPIRES ?? "8h",

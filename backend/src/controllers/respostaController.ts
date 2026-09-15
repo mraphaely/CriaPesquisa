@@ -5,18 +5,12 @@ import type { ListarRespostasFiltros } from "../models/respostaModel.js";
 import { pesquisaModel } from "../models/pesquisaModel.js";
 import { registrarLog } from "../helper/auditoria.js";
 import { validarRespostaContraPerguntas } from "../helper/validarResposta.js";
+import { parsePaginacao } from "../helper/paginacao.js";
 import { HttpError } from "../middleware/errorHandler.js";
 import type { CriarRespostaInput, AtualizarRespostaInput, ReprovarRespostaInput } from "../helper/validators.js";
 
 function parseQueryString(valor: unknown): string | undefined {
   return typeof valor === "string" ? valor : undefined;
-}
-
-function parseQueryNumber(valor: unknown): number | undefined {
-  const texto = parseQueryString(valor);
-  if (!texto) return undefined;
-  const numero = Number(texto);
-  return Number.isFinite(numero) ? numero : undefined;
 }
 
 function parseQueryDate(valor: unknown): Date | undefined {
@@ -46,8 +40,7 @@ export function extrairFiltrosBase(query: Request["query"]): Omit<ListarResposta
 export function extrairFiltrosListagem(query: Request["query"]): ListarRespostasFiltros {
   return {
     ...extrairFiltrosBase(query),
-    page: parseQueryNumber(query.page) ?? 1,
-    pageSize: parseQueryNumber(query.pageSize) ?? 50,
+    ...parsePaginacao(query, 50),
   };
 }
 

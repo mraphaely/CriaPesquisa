@@ -10,6 +10,7 @@ import { respostaModel } from "../src/models/respostaModel.js";
 import { pesquisaModel } from "../src/models/pesquisaModel.js";
 import { registrarLog } from "../src/helper/auditoria.js";
 import { gerarToken } from "../src/helper/token.js";
+import { PAGE_SIZE_MAX } from "../src/helper/paginacao.js";
 
 const app = createApp();
 const tokenGestor = gerarToken({ sub: "u1", papel: "GESTOR" });
@@ -104,8 +105,21 @@ describe("GET /api/pesquisas/:id/respostas", () => {
     expect(res.status).toBe(200);
     expect(res.body.total).toBe(1);
     expect(res.body.page).toBe(1);
-    expect(res.body.pageSize).toBe(20);
+    expect(res.body.pageSize).toBe(50);
     expect(res.body.itens).toHaveLength(1);
+  });
+
+  it("6b) pageSize absurdo é limitado ao teto (não despeja a tabela inteira)", async () => {
+    vi.mocked(pesquisaModel.obterPorId).mockResolvedValue({ id: "p1", status: "PUBLICADA", perguntas: [] } as never);
+    vi.mocked(respostaModel.listar).mockResolvedValue({ total: 1, itens: [{ id: "r1" }] } as never);
+
+    const res = await request(app)
+      .get("/api/pesquisas/p1/respostas?pageSize=999999")
+      .set("Authorization", `Bearer ${tokenVisualizador}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.pageSize).toBe(PAGE_SIZE_MAX);
+    expect(respostaModel.listar).toHaveBeenCalledWith("p1", expect.objectContaining({ pageSize: PAGE_SIZE_MAX }));
   });
 });
 

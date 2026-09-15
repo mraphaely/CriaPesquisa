@@ -4,22 +4,17 @@ import { pesquisaModel } from "../models/pesquisaModel.js";
 import { registrarLog } from "../helper/auditoria.js";
 import { snapshotPesquisa } from "../helper/versao.js";
 import { HttpError } from "../middleware/errorHandler.js";
+import { parsePaginacao } from "../helper/paginacao.js";
 import type { CriarPesquisaInput, AtualizarPesquisaInput } from "../helper/validators.js";
 
 function parseQueryString(valor: unknown): string | undefined {
   return typeof valor === "string" ? valor : undefined;
 }
 
-function parseQueryNumber(valor: unknown): number | undefined {
-  const texto = parseQueryString(valor);
-  return texto ? Number(texto) : undefined;
-}
-
 export async function listar(req: Request, res: Response) {
   const status = parseQueryString(req.query.status) as StatusPesquisa | undefined;
   const q = parseQueryString(req.query.q);
-  const page = parseQueryNumber(req.query.page) ?? 1;
-  const pageSize = parseQueryNumber(req.query.pageSize) ?? 20;
+  const { page, pageSize } = parsePaginacao(req.query, 20);
 
   const { total, itens } = await pesquisaModel.listar({ status, q, page, pageSize });
   res.json({ total, page, pageSize, itens });

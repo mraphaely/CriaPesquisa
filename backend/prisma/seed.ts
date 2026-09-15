@@ -3,6 +3,7 @@ import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import { prisma } from "../src/config/prisma.js";
 import { hashSenha } from "../src/helper/senha.js";
+import { senhaForte } from "../src/helper/politicaSenha.js";
 import { regionalDoMunicipio } from "../src/helper/regionais.js";
 import { PESQUISAS_CARTAO_CRIA, criarPesquisaCompleta } from "./pesquisas-cartao-cria.js";
 
@@ -27,12 +28,28 @@ async function seedUsuarios() {
   // Senha inicial das contas-base. Nunca fixe credencial real no repositório:
   // defina SEED_PASSWORD no .env do ambiente. O default abaixo é só para dev local.
   const senhaPadrao = process.env.SEED_PASSWORD ?? "dev-criapesquisa";
+
+  // Em produção as quatro contas nascem com a MESMA senha, conhecida por quem
+  // roda o seed. Deixar passar uma senha fraca aqui seria abrir o sistema com a
+  // porta encostada — e o default de dev jamais pode virar credencial real.
+  if (process.env.NODE_ENV === "production") {
+    if (!process.env.SEED_PASSWORD) {
+      throw new Error("SEED_PASSWORD é obrigatória em produção.");
+    }
+    const veredito = senhaForte.safeParse(senhaPadrao);
+    if (!veredito.success) {
+      throw new Error(`SEED_PASSWORD não atende à política de senha: ${veredito.error.issues[0].message}`);
+    }
+  }
+
   const senhaHash = await hashSenha(senhaPadrao);
   for (const u of base) {
     await prisma.usuario.upsert({
       where: { email: u.email },
       update: {},
-      create: { nome: u.nome, email: u.email, papel: u.papel, senhaHash },
+      // precisaTrocarSenha: quem roda o seed conhece esta senha. A conta só
+      // passa a identificar a pessoa depois que ela troca, no primeiro acesso.
+      create: { nome: u.nome, email: u.email, papel: u.papel, senhaHash, precisaTrocarSenha: true },
     });
   }
 }

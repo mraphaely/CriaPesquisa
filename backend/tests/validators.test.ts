@@ -67,7 +67,7 @@ describe("criarRespostaSchema", () => {
 });
 
 describe("criarUsuarioSchema", () => {
-  it("senha curta (<6) é inválida", () => {
+  it("senha curta é inválida", () => {
     const resultado = criarUsuarioSchema.safeParse({
       nome: "Teste",
       email: "teste@cria.al",
@@ -81,7 +81,7 @@ describe("criarUsuarioSchema", () => {
     const resultado = criarUsuarioSchema.safeParse({
       nome: "Teste",
       email: "nao-e-email",
-      senha: "123456",
+      senha: "colina verde 42",
       papel: "ADMIN",
     });
     expect(resultado.success).toBe(false);
@@ -91,7 +91,7 @@ describe("criarUsuarioSchema", () => {
     const resultado = criarUsuarioSchema.safeParse({
       nome: "Teste",
       email: "teste@cria.al",
-      senha: "123456",
+      senha: "colina verde 42",
       papel: "GESTOR",
     });
     expect(resultado.success).toBe(true);
@@ -101,7 +101,7 @@ describe("criarUsuarioSchema", () => {
     const resultado = criarUsuarioSchema.safeParse({
       nome: "Teste",
       email: "teste@cria.al",
-      senha: "123456",
+      senha: "colina verde 42",
       papel: "SUPERUSUARIO",
     });
     expect(resultado.success).toBe(false);
