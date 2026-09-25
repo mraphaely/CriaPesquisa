@@ -1,6 +1,6 @@
 # Indicadores do Cartão CRIA — desenho
 
-Data: 2026-09-24
+Data: 2026-09-24 — revisto em 2026-09-25 com as respostas do Emerson
 Estado: aguardando revisão
 
 ## O problema
@@ -34,10 +34,9 @@ apontam para a pergunta certa; o desvio cresce ao longo do formulário e chega a
 vínculo é feito por casamento de texto sobre a coluna `Pergunta (Descrição)`, com revisão
 humana.
 
-**As classificações obrigam cálculo por indivíduo.** "Percentual de crianças com IDTC
-entre 0% e 25%" só faz sentido se o IDTC existir criança por criança. Portanto VCRAS,
-CVAC e CPUER são 0 ou 100 por beneficiário, o MCC sai por criança, e o valor populacional
-é a média disso. (A confirmar.)
+**O cálculo é por indivíduo, depois agregado.** Confirmado: "gerado por usuário e depois
+vira média geral". É o que as classificações exigiam — "percentual de crianças com IDTC
+entre 0% e 25%" só faz sentido se o IDTC existir criança por criança.
 
 ## Catálogo de tipos
 
@@ -52,8 +51,22 @@ CVAC e CPUER são 0 ou 100 por beneficiário, o MCC sai por criança, e o valor 
 | `CONTAGEM` | — | contagem | Total de famílias entrevistadas |
 | `DISTRIBUICAO` | — | % por opção | % por raça |
 
-`VARIACAO` (diferença entre o par ANTES/APÓS) fica fora até a pendência D-15 ser
-respondida. Não construímos tipo baseado em suposição.
+Não existe tipo `VARIACAO`. A resposta ao par ANTES/APÓS eliminou a necessidade — ver a
+seção seguinte.
+
+## Recorte ANTES/APÓS
+
+O questionário tem 14 pares de perguntas idênticas com sufixo `— ANTES do Cartão CRIA` e
+`— APÓS o Cartão CRIA`. Eram a maior fonte de ambiguidade na importação: 22 linhas da
+planilha casavam com os dois lados e não havia como escolher.
+
+A regra decidida: **o indicador não escolhe um lado nem calcula a diferença. Ele produz
+dois valores, antes e depois, exibidos lado a lado para comparação.**
+
+Isso é um recorte, não um tipo. Qualquer tipo do catálogo pode ser pareado: o motor avalia
+o mesmo `f(resposta)` sobre a pergunta ANTES e sobre a pergunta APÓS e devolve os dois
+números. O catálogo fica intacto, e as 22 ambiguidades deixam de ser decisão — viram
+estrutura.
 
 ## Modelo de dados
 
@@ -62,7 +75,8 @@ Indicador
   codigo, nome, objetivo, tipo, unidade, casasDecimais
   pesquisaId        nulo quando cruza pesquisas (MCB)
   config: jsonb     validado por Zod conforme o tipo
-  meta              nulo — nenhuma das 110 linhas tem meta preenchida
+  recorte           nulo, ou ANTES_APOS com o par de perguntas
+  meta              nulo — nenhuma das 110 linhas tem meta; serão definidas depois
   formulaOriginal   texto da planilha, mantido como referência
   status            ATIVO | DEFINICAO_INCOMPLETA | INATIVO
   origemPlanilha    linha de origem, para rastrear
@@ -79,10 +93,43 @@ apagar o MCC" antes de alguém apagar.
 indicador entra com nome, objetivo e fórmula original, aparece marcado na tela, e não
 produz número nenhum até a regra ser fechada.
 
+## Definições confirmadas
+
+**MCC é média ponderada.** `[(VCRAS×3) + (CVAC×5) + (CPUER×5)] ÷ 13` — o 13 divide a soma
+inteira. Os pesos somam 13, então o resultado fica na mesma escala dos termos.
+
+**Todos os termos em 0–100**, inclusive MCC e Segurança Alimentar dentro do IDTC.
+
+**A Segurança Alimentar do IDTC é a do TRIA** (`100 − TRIA Risco`), não o índice de
+3 refeições.
+
+**MCB é ponderado pelo número de beneficiários** de cada pesquisa:
+`(MCC × n_crianças + MCG × n_gestantes) ÷ (n_crianças + n_gestantes)`.
+
+**Denominador = total de respostas àquela pergunta.** Branco sai do numerador e do
+denominador.
+
+**Filtros do painel:** Regional, Município, Sexo e Período.
+
+**Removidos por não terem pergunta:** `% Internação hospitalar` e `% Famílias com
+gestante`. Conferido no questionário — não existe pergunta correspondente a nenhum dos
+dois.
+
+**`% Obesidade Infantil` deriva do IMC da criança**, não é indicador independente.
+
+**Perguntas de origem dos termos do MCC**, localizadas no questionário:
+
+| Termo | Pergunta | Tipo |
+|---|---|---|
+| VCRAS | "A criança e a família participam de atividades propostas pelo CRAS?" | Sim/Não, com par ANTES/APÓS |
+| CVAC | "Carteira de vacinação da criança atualizada" | Sim/Não/Não soube informar, com par ANTES/APÓS |
+| CPUER | "Número de consultas de puericultura no último ano" | número |
+| CPRE | — sem pergunta de contagem no questionário | — |
+
 ## Motor
 
 ```
-carrega respostas APROVADAS (com filtros de município, regional e período)
+carrega respostas APROVADAS (com filtros de regional, município, sexo e período)
         |
 por resposta: avalia os indicadores na ordem de dependência
         |
@@ -93,17 +140,18 @@ classifica em faixas
 cache
 ```
 
-Os filtros reaproveitam `extrairFiltrosBase`, já usado por resumo e exportação — então o
-painel filtra com o mesmo significado das outras telas.
+Regional, município e período já existem em `extrairFiltrosBase`, usado por resumo e
+exportação. **Sexo é diferente em natureza**: os outros três são campos da resposta, e
+sexo é a *resposta a uma pergunta* ("Sexo biológico da criança"). Filtrar por ele exige
+consultar os itens da resposta, não a resposta. Na pesquisa Gestante o filtro é quase
+constante e não separa nada — ele serve à pesquisa Criança.
 
 **Dependência incompleta propaga.** Se o MCC está sem definição, o IDTC e suas quatro
 classificações exibem "não calculável — depende de MCC", com link para o indicador que
 trava a cadeia. Nunca zero, nunca resultado parcial: número plausível e errado num painel
 de política pública é pior que lacuna assumida.
 
-**Denominador zero** devolve "sem dados suficientes". **Pergunta em branco** sai do
-numerador e do denominador — este é o padrão adotado, configurável por indicador, e
-segue valendo até a pendência sobre denominador ser respondida.
+**Denominador zero** devolve "sem dados suficientes".
 
 ## Importação
 
@@ -113,22 +161,19 @@ de revisão mostra o texto da planilha ao lado da pergunta candidata para confir
 
 Situação medida sobre as 110 linhas do Cartão CRIA:
 
-| Situação | Quantidade |
-|---|---|
-| Casamento único e confiante | 60 |
-| Ambíguo (quase todos pares ANTES/APÓS) | 22 |
-| Sem candidata boa | 11 |
-| Sem descrição para casar | 17 |
-
-Os 22 ambíguos são, quase todos, a mesma decisão — qual lado do par ANTES/APÓS o
-indicador mede. Uma resposta resolve o conjunto.
+| Situação | Quantidade | Depois das respostas |
+|---|---|---|
+| Casamento único e confiante | 60 | 60 |
+| Ambíguo (pares ANTES/APÓS) | 22 | resolvidos: viram indicador pareado |
+| Sem candidata boa | 11 | 9 (dois removidos por não existir pergunta) |
+| Sem descrição para casar | 17 | 17 |
 
 ## Painel
 
 Agrupado pela coluna `Apresentação` da planilha (Escopo, Perfil). Gráfico escolhido pelo
 tipo: distribuição em barra ou rosca (reaproveitando `DonutInterativo` e `ChartCard`),
 proporção e composto como valor com meta quando houver, classificação como barra
-empilhada das quatro faixas.
+empilhada das quatro faixas. Indicador pareado exibe os dois valores lado a lado.
 
 ## Testes
 
@@ -139,34 +184,46 @@ números. É o que pega erro de precedência, de escala e de ordem de agregaçã
 **Por tipo**, com uma resposta fabricada cada, no formato `f(resposta)`.
 
 **De borda**: denominador zero, pergunta em branco, referência circular recusada ao
-salvar, propagação de dependência incompleta.
+salvar, propagação de dependência incompleta, indicador pareado com um dos lados vazio.
 
 **Aceitação**: se a equipe tiver um indicador já calculado à mão, comparar contra ele.
 
-## Premissas adotadas (a confirmar)
+## Pendências
 
-1. `MCC = [(VCRAS×3) + (CVAC×5) + (CPUER×5)] ÷ 13` — o 13 divide a soma inteira, não só
-   o último termo
-2. Todos os termos em escala 0–100
-3. `Segurança Alimentar = 100 − TRIA Risco` (a própria planilha define isso na linha do
-   TRIA)
-4. IDTC e IDMCC são o mesmo índice com dois nomes
+Enquanto não respondidas, os indicadores afetados ficam `DEFINICAO_INCOMPLETA`.
 
-## Pendências que bloqueiam indicadores específicos
+**Sem resposta:**
 
-Sem resposta, estes ficam `DEFINICAO_INCOMPLETA`:
+- Pontos de corte do TRIA entre "sem risco", "risco leve" e "risco moderado/alto". O
+  espaço é pequeno: são duas perguntas Sim/Não, logo só há três estados possíveis
+  (nenhum, um ou dois "sim").
+- Escala de insegurança alimentar (Grave/Média/Leve) — se é EBIA, qual versão.
+- Índice de Atenção à Saúde da Criança: as três perguntas existem (vacinação,
+  puericultura, suplementação de ferro e vitamina A). Falta a regra de combinação.
+- Índice Socioeconômico Familiar: renda, escolaridade e moradia existem nas duas
+  pesquisas. Falta saber se a padronização é z-score ou min-max.
+- Percentil de referência para desnutrição e obesidade: curvas da OMS por idade e sexo,
+  ou percentil da própria amostra. Resultados muito diferentes.
+- IDTC e IDMCC são o mesmo índice com dois nomes? A resposta recebida não resolveu.
+- Escopo: só Cartão CRIA, ou os outros seis projetos da planilha.
+- Quem cadastra e edita indicador. O sistema não tem papel "PO" — os papéis são ADMIN,
+  GESTOR, COLETADOR e VISUALIZADOR.
 
-- Qual resposta conta como "SIM" no TRIA (as opções são Sempre/Quase sempre/Raramente/Nunca)
-- Pontos de corte do TRIA e da escala de insegurança alimentar (Grave/Média/Leve)
-- Percentil de referência para desnutrição e obesidade (curvas da OMS por idade e sexo,
-  ou percentil da própria amostra)
-- IMC da gestante: peso atual ou anterior à gravidez; faixa comum ou tabela por semana
-  gestacional
-- Definição de Índice de Atenção à Saúde da Criança, Índice Socioeconômico Familiar,
-  % Internação hospitalar, % Famílias com gestante, Escala de insegurança alimentar
-- ANTES/APÓS: qual lado o indicador mede, ou se o que interessa é a variação
-- Denominador: todas as respostas, só as aprovadas, ou só quem respondeu a pergunta
-- Metas: se haverá, e em que granularidade
+**Levantadas pelas próprias respostas:**
+
+- CPUER precisa entrar em 0–100, mas a pergunta é uma contagem de consultas. Qual número
+  vale 100?
+- CPRE não tem pergunta de contagem. A única sobre pré-natal é "Quando iniciou o
+  pré-natal?" (antes de 12 semanas / após 12 semanas / não soube / sem pré-natal).
+- "Não soube informar" na vacinação: fica fora do denominador, ou conta como "não"? Muda
+  o percentual.
+- Suplementação tem opção "Não se aplica" por faixa etária. Criança fora da faixa não
+  pode ser penalizada no índice.
+- IMC da gestante: a resposta fala em "um IMC durante e um após a gestação", mas o
+  questionário tem peso *antes de engravidar*, peso *atual* e altura atual. Não há peso
+  pós-parto. O par que os dados permitem é pré-gestacional e atual — confirmar se é isso.
+- Metas: confirmado que serão definidas, mas ainda não existem. Painel mostra valor sem
+  alvo até lá.
 
 ## Ordem de construção
 
@@ -175,9 +232,9 @@ verificável sozinho:
 
 1. **Modelo e cadastro** — tabelas, validação por tipo, CRUD com auditoria, detecção de
    ciclo. Sem cálculo ainda.
-2. **Motor** — `f(resposta)` por tipo, ordem de dependência, agregação, propagação de
-   incompleto. É aqui que entra o teste dourado.
-3. **Importação** — casamento por texto e tela de revisão dos 110.
+2. **Motor** — `f(resposta)` por tipo, recorte ANTES/APÓS, ordem de dependência,
+   agregação, propagação de incompleto. É aqui que entra o teste dourado.
+3. **Importação** — casamento por texto e tela de revisão dos 108.
 4. **Painel** — gráficos por tipo e filtros.
 
 As fases 1 e 2 entregam valor mesmo sem as 3 e 4: dá para cadastrar um indicador à mão e
@@ -187,8 +244,8 @@ ver o número pela API.
 
 - Cache em memória. O `docker-compose.prod.yml` sobe uma réplica da API; com mais de uma,
   cada uma teria seu cache e os números poderiam divergir por alguns segundos.
-- Escopo inicial: Cartão CRIA (110 indicadores). Os outros seis projetos da planilha
-  (UEPNAR, DeciDIU, AIDPI Neonatal, Creche CRIA, Fluxograma de violência) não têm
-  pesquisa no sistema.
-- Nenhuma das 110 linhas tem `Meta` preenchida; o painel mostra valor sem referência de
-  alvo até que metas existam.
+- Escopo inicial: Cartão CRIA (108 indicadores, após a remoção de dois). Os outros seis
+  projetos da planilha (UEPNAR, DeciDIU, AIDPI Neonatal, Creche CRIA, Fluxograma de
+  violência) não têm pesquisa no sistema.
+- O filtro por sexo depende de uma pergunta, não de um campo da resposta — é mais caro de
+  consultar que os outros três e não se aplica à pesquisa Gestante.
