@@ -111,6 +111,9 @@ denominador.
 
 **Filtros do painel:** Regional, Município, Sexo e Período.
 
+**Quem cadastra e edita indicador:** ADMIN e GESTOR. COLETADOR e VISUALIZADOR só
+consultam o painel. (O sistema não tem papel "PO"; GESTOR é o papel correspondente.)
+
 **Removidos por não terem pergunta:** `% Internação hospitalar` e `% Famílias com
 gestante`. Conferido no questionário — não existe pergunta correspondente a nenhum dos
 dois.
@@ -206,8 +209,13 @@ Enquanto não respondidas, os indicadores afetados ficam `DEFINICAO_INCOMPLETA`.
   ou percentil da própria amostra. Resultados muito diferentes.
 - IDTC e IDMCC são o mesmo índice com dois nomes? A resposta recebida não resolveu.
 - Escopo: só Cartão CRIA, ou os outros seis projetos da planilha.
-- Quem cadastra e edita indicador. O sistema não tem papel "PO" — os papéis são ADMIN,
-  GESTOR, COLETADOR e VISUALIZADOR.
+
+Medido sobre as 108 linhas: **84 indicadores produzem número com o que já está definido**,
+4 calculam com uma convenção adotada (vacinação e suplementação), e **20 ficam sem número**
+— os compostos (MCC, MCG, MCB, IDTC, IDMCC e as quatro classificações), TRIA, insegurança
+alimentar, Índice Socioeconômico, Índice de Atenção à Saúde, desnutrição e obesidade. São
+os índices de manchete: o painel nasce completo em perfil e vazio em índice até as
+respostas chegarem.
 
 **Levantadas pelas próprias respostas:**
 
