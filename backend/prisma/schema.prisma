@@ -48,6 +48,27 @@ enum AcaoLog {
   REPROVAR
 }
 
+enum TipoIndicador {
+  PROPORCAO
+  CRUZAMENTO
+  MEDIA
+  DERIVADA
+  COMPOSTO
+  CLASSIFICACAO
+  CONTAGEM
+  DISTRIBUICAO
+}
+
+enum StatusIndicador {
+  ATIVO
+  DEFINICAO_INCOMPLETA
+  INATIVO
+}
+
+enum RecorteIndicador {
+  ANTES_APOS
+}
+
 model Usuario {
   id        String       @id @default(uuid())
   nome      String
@@ -122,6 +143,7 @@ model Pesquisa {
   perguntas   Pergunta[]
   respostas   Resposta[]
   versoes     PesquisaVersao[]
+  indicadores Indicador[]
 
   @@index([status])
   @@index([responsavelId])
@@ -246,4 +268,48 @@ model PesquisaVersao {
   usuario  Usuario  @relation(fields: [usuarioId], references: [id])
 
   @@unique([pesquisaId, versao])
+}
+
+model Indicador {
+  id             String            @id @default(uuid())
+  codigo         String            @unique
+  nome           String
+  objetivo       String?
+  tipo           TipoIndicador
+  unidade        String?
+  casasDecimais  Int               @default(1)
+  pesquisaId     String?
+  config         Json
+  recorte        RecorteIndicador?
+  recorteConfig  Json?
+  meta           Float?
+  formulaOriginal String?
+  status         StatusIndicador   @default(DEFINICAO_INCOMPLETA)
+  motivoIncompleto String?
+  origemPlanilha Int?
+  createdById    String?
+  updatedById    String?
+  deletedAt      DateTime?
+  deletedById    String?
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  pesquisa     Pesquisa?              @relation(fields: [pesquisaId], references: [id])
+  dependeDe    IndicadorDependencia[] @relation("IndicadorOrigem")
+  usadoPor     IndicadorDependencia[] @relation("IndicadorDestino")
+
+  @@index([status])
+  @@index([pesquisaId])
+  @@index([deletedAt])
+}
+
+model IndicadorDependencia {
+  indicadorId String
+  dependeDeId String
+
+  indicador Indicador @relation("IndicadorOrigem", fields: [indicadorId], references: [id], onDelete: Cascade)
+  dependeDe Indicador @relation("IndicadorDestino", fields: [dependeDeId], references: [id])
+
+  @@id([indicadorId, dependeDeId])
+  @@index([dependeDeId])
 }
