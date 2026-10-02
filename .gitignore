@@ -40,3 +40,6 @@ Executivo/
 Thumbs.db
 .vscode/
 .idea/
+
+# Worktrees locais do Claude Code
+.claude/worktrees/
