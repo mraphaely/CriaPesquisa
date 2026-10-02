@@ -13,7 +13,7 @@ const id = z.string().min(1);
 const noExpressao: z.ZodType<NoExpressao> = z.lazy(() =>
   z.union([
     z.object({ var: z.string().min(1) }).strict(),
-    z.object({ const: z.number() }).strict(),
+    z.object({ const: z.number().finite() }).strict(),
     z.object({ op: z.enum(["+", "-", "*", "/"]), esq: noExpressao, dir: noExpressao }).strict(),
   ]),
 );
@@ -33,8 +33,18 @@ const condicao = z.object({
   perguntaId: id,
   opcoes: z.array(z.string().min(1)).min(1).optional(),
   operador: z.enum(["<", "<=", ">", ">=", "=="]).optional(),
-  valor: z.number().optional(),
-}).strict();
+  valor: z.number().finite().optional(),
+})
+  .strict()
+  .refine(
+    (c) => {
+      const temOpcoes = c.opcoes !== undefined;
+      const temOperador = c.operador !== undefined;
+      const temValor = c.valor !== undefined;
+      return temOpcoes ? !temOperador && !temValor : temOperador && temValor;
+    },
+    { message: "condição precisa de opcoes, ou de operador e valor juntos (não ambos)" },
+  );
 
 const cruzamento = z.object({
   tipo: z.literal("CRUZAMENTO"),
@@ -51,21 +61,24 @@ const derivada = z
   })
   .strict()
   .refine(
-    (c) => variaveisUsadas(c.expressao).every((v) => v in c.variaveis),
+    (c) => variaveisUsadas(c.expressao).every((v) => Object.hasOwn(c.variaveis, v)),
     { message: "expressão usa variável não declarada" },
-  );
+  )
+  .refine((c) => !temDivisaoPorZeroLiteral(c.expressao), {
+    message: "expressão divide por zero literal",
+  });
 
 const composto = z.object({
   tipo: z.literal("COMPOSTO"),
-  termos: z.array(z.object({ indicadorId: id, peso: z.number() }).strict()).min(1),
-  divisor: z.number().refine((d) => d !== 0, { message: "divisor não pode ser zero" }),
+  termos: z.array(z.object({ indicadorId: id, peso: z.number().finite() }).strict()).min(1),
+  divisor: z.number().finite().refine((d) => d !== 0, { message: "divisor não pode ser zero" }),
 }).strict();
 
 const classificacao = z.object({
   tipo: z.literal("CLASSIFICACAO"),
   indicadorId: id,
   faixas: z
-    .array(z.object({ rotulo: z.string().min(1), de: z.number(), ate: z.number() }).strict())
+    .array(z.object({ rotulo: z.string().min(1), de: z.number().finite(), ate: z.number().finite() }).strict())
     .min(1)
     .refine((fs) => fs.every((f) => f.de < f.ate), { message: "faixa com início maior que o fim" }),
 }).strict();
@@ -93,9 +106,17 @@ function variaveisUsadas(no: NoExpressao): string[] {
   return [...variaveisUsadas(no.esq), ...variaveisUsadas(no.dir)];
 }
 
+function temDivisaoPorZeroLiteral(no: NoExpressao): boolean {
+  if ("var" in no || "const" in no) return false;
+  if (no.op === "/" && "const" in no.dir && no.dir.const === 0) return true;
+  return temDivisaoPorZeroLiteral(no.esq) || temDivisaoPorZeroLiteral(no.dir);
+}
+
 export function validarConfig(tipo: TipoIndicador, config: unknown): ConfigIndicador {
-  const bruto = typeof config === "object" && config !== null ? config : {};
-  return esquemas[tipo].parse({ ...bruto, tipo }) as ConfigIndicador;
+  // O tipo vem do registro do indicador, nunca do JSON: sobrescreve qualquer `tipo` interno.
+  // Entrada que não é objeto simples (null, array, texto) vai direto ao schema, que a recusa.
+  const ehObjeto = typeof config === "object" && config !== null && !Array.isArray(config);
+  return esquemas[tipo].parse(ehObjeto ? { ...config, tipo } : config) as ConfigIndicador;
 }
 
 export function perguntasReferenciadas(config: ConfigIndicador): string[] {
