@@ -36,6 +36,9 @@ export type ResultadoComRecorte = ResultadoIndicador | { antes: ResultadoIndicad
 
 type Substituicoes = Array<{ de: string; para: string }>;
 
+/** Tipos que só existem na agregação: `avaliar` devolve null para eles (avaliadores.ts). */
+const TIPOS_SEM_VALOR_INDIVIDUAL: ReadonlySet<TipoIndicador> = new Set(["CLASSIFICACAO", "CONTAGEM", "DISTRIBUICAO"]);
+
 /** Troca as perguntas do recorte, para avaliar o mesmo indicador no outro cenário. */
 function aplicarSubstituicoes(config: ConfigIndicador, substituicoes: Substituicoes): ConfigIndicador {
   const mapa = new Map(substituicoes.map((s) => [s.de, s.para]));
@@ -103,7 +106,8 @@ export function calcular(
 
   const resultados = new Map<string, ResultadoComRecorte>();
   const valoresAntes = new Map<string, ValorIndividual[]>();
-  const valoresApos = new Map<string, ValorIndividual[]>(); // só indicadores pareados
+  // Indicadores pareados: os de recorte próprio e os que herdaram o par de uma dependência.
+  const valoresApos = new Map<string, ValorIndividual[]>();
   const incompletos = new Map<string, string>(); // id -> id do indicador que trava a cadeia
 
   const marcarIncompleto = (id: string, motivo: string, raiz: string, dependencia?: string) => {
@@ -141,7 +145,7 @@ export function calcular(
     const dependencias = indicadoresReferenciados(config);
     const ausente = dependencias.find((dep) => !porId.has(dep));
     if (ausente) {
-      marcarIncompleto(id, `depende de ${ausente}, que não está ativo`, ausente, ausente);
+      marcarIncompleto(id, `depende de ${ausente}, que não está disponível`, ausente, ausente);
       continue;
     }
 
@@ -151,6 +155,22 @@ export function calcular(
     if (travado) {
       const raiz = incompletos.get(travado)!;
       marcarIncompleto(id, `depende de ${raiz}`, raiz, raiz);
+      continue;
+    }
+
+    // 5b. Dependência de tipo que não tem valor por indivíduo: o dependente leria só
+    //     nulos e sairia "sem dados" em silêncio. O cadastro não impede (o tipo da
+    //     dependência pode mudar depois), então o motor recusa aqui. A definição
+    //     quebrada é a deste indicador: ele é a raiz para quem vier acima.
+    const semValorIndividual = dependencias.find((dep) => TIPOS_SEM_VALOR_INDIVIDUAL.has(porId.get(dep)!.tipo));
+    if (semValorIndividual) {
+      const tipo = porId.get(semValorIndividual)!.tipo;
+      marcarIncompleto(
+        id,
+        `depende de ${semValorIndividual}, do tipo ${tipo}, que não tem valor por indivíduo`,
+        id,
+        semValorIndividual,
+      );
       continue;
     }
 

@@ -133,8 +133,42 @@ describe("propagação de definição incompleta", () => {
   it("dependência fora do conjunto (inativa ou apagada) vira incompleto, não sem dados", () => {
     const semTermo = INDICADORES.filter((i) => i.id !== "cpuer");
     const r = calcular(semTermo, AMOSTRA, PERGUNTAS);
-    expect(r.get("mcc")).toMatchObject({ status: "INCOMPLETO", dependencia: "cpuer" });
+    expect(r.get("mcc")).toEqual({
+      status: "INCOMPLETO",
+      motivo: "depende de cpuer, que não está disponível",
+      dependencia: "cpuer",
+    });
     expect(r.get("idtcFaixas")).toMatchObject({ status: "INCOMPLETO", dependencia: "cpuer" });
+  });
+
+  describe("dependência de tipo sem valor por indivíduo vira incompleto, não sem dados", () => {
+    const total = ind({ id: "total", tipo: "CONTAGEM", config: {} });
+    const dist = ind({ id: "dist", tipo: "DISTRIBUICAO", config: { perguntaId: "cras" } });
+    const faixasMcc = INDICADORES.find((i) => i.id === "idtcFaixas")!;
+    const faixas = (id: string, indicadorId: string) =>
+      ind({ id, tipo: "CLASSIFICACAO", config: { indicadorId, faixas: [{ rotulo: "Todas", de: 0, ate: 100 }] } });
+
+    it("COMPOSTO sobre CONTAGEM, e a lacuna propaga para cima", () => {
+      const sobreTotal = ind({ id: "sobreTotal", tipo: "COMPOSTO", config: { termos: [{ indicadorId: "total", peso: 1 }], divisor: 1 } });
+      const r = calcular([total, sobreTotal, faixas("acima", "sobreTotal")], AMOSTRA, PERGUNTAS);
+      expect(r.get("sobreTotal")).toEqual({
+        status: "INCOMPLETO",
+        motivo: "depende de total, do tipo CONTAGEM, que não tem valor por indivíduo",
+        dependencia: "total",
+      });
+      expect(r.get("acima")).toMatchObject({ status: "INCOMPLETO", dependencia: "sobreTotal" });
+      expect(r.get("total")).toEqual({ status: "OK", valor: 3 });
+    });
+
+    it("CLASSIFICACAO sobre DISTRIBUICAO", () => {
+      const r = calcular([dist, faixas("sobreDist", "dist")], AMOSTRA, PERGUNTAS);
+      expect(r.get("sobreDist")).toMatchObject({ status: "INCOMPLETO", dependencia: "dist" });
+    });
+
+    it("CLASSIFICACAO sobre CLASSIFICACAO", () => {
+      const r = calcular([...INDICADORES, faixas("sobreFaixas", "idtcFaixas")], AMOSTRA, PERGUNTAS);
+      expect(r.get("sobreFaixas")).toMatchObject({ status: "INCOMPLETO", dependencia: faixasMcc.id });
+    });
   });
 
   it("dependência circular gravada no banco é acusada, não calculada", () => {
