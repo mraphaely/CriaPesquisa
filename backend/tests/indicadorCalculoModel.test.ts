@@ -53,10 +53,13 @@ describe("indicadorCalculoModel.carregarRespostas", () => {
 
   it("monta RespostaAvaliavel com mapa de itens por pergunta", async () => {
     vi.mocked(prisma.resposta.findMany).mockResolvedValue([
-      { id: "r1", itens: [{ perguntaId: "p1", valorTexto: null, valorNumero: 0, opcoesSelecionadas: [] }] },
+      { id: "r1", pesquisaId: "ps1", itens: [{ perguntaId: "p1", valorTexto: null, valorNumero: 0, opcoesSelecionadas: [] }] },
     ] as never);
     const [r] = await indicadorCalculoModel.carregarRespostas({});
     expect(r!.id).toBe("r1");
+    expect(r!.pesquisaId).toBe("ps1");
+    const select = (vi.mocked(prisma.resposta.findMany).mock.calls[0]![0] as { select: Record<string, unknown> }).select;
+    expect(select.pesquisaId).toBe(true);
     expect(r!.itens.get("p1")?.valorNumero).toBe(0);
   });
 });

@@ -6,7 +6,7 @@ import { CicloDetectado } from "../src/helper/dependencias.js";
 const PERGUNTAS = new Set(["cras", "vacina", "puer", "renda"]);
 
 function ind(parcial: Partial<IndicadorParaCalculo> & Pick<IndicadorParaCalculo, "id" | "tipo" | "config">): IndicadorParaCalculo {
-  return { codigo: parcial.id, casasDecimais: 2, status: "ATIVO", ...parcial };
+  return { codigo: parcial.id, casasDecimais: 2, status: "ATIVO", pesquisaId: null, ...parcial };
 }
 
 /**
@@ -422,5 +422,77 @@ describe("recorte ANTES/APÓS", () => {
       apos: { status: "OK_DISTRIBUICAO", itens: [{ opcao: "Verde", contagem: 1, percentual: 100 }] },
     });
     expect(r.get("media")).toEqual({ antes: { status: "OK", valor: 1 }, apos: { status: "OK", valor: 5 } });
+  });
+});
+
+describe("indicador com pesquisaId considera só as respostas daquela pesquisa", () => {
+  // Criança (pc) e Gestante (pg) compartilham a pergunta "cras" só para o teste.
+  const respostas = [
+    montarResposta("A", [{ perguntaId: "cras", opcoesSelecionadas: ["Sim"] }, { perguntaId: "vacina", opcoesSelecionadas: ["Sim"] }], "pc"),
+    montarResposta("B", [{ perguntaId: "cras", opcoesSelecionadas: ["Não"] }, { perguntaId: "vacina", opcoesSelecionadas: ["Sim"] }], "pc"),
+    montarResposta("G1", [{ perguntaId: "cras", opcoesSelecionadas: ["Sim"] }, { perguntaId: "vacina", opcoesSelecionadas: ["Não"] }], "pg"),
+    montarResposta("G2", [{ perguntaId: "cras", opcoesSelecionadas: ["Sim"] }, { perguntaId: "vacina", opcoesSelecionadas: ["Não"] }], "pg"),
+    montarResposta("G3", [{ perguntaId: "cras", opcoesSelecionadas: ["Sim"] }, { perguntaId: "vacina", opcoesSelecionadas: ["Não"] }], "pg"),
+  ];
+
+  it("CONTAGEM conta só as respostas da pesquisa do indicador", () => {
+    const r = calcular([ind({ id: "total", tipo: "CONTAGEM", config: {}, pesquisaId: "pc" })], respostas, PERGUNTAS);
+    expect(r.get("total")).toEqual({ status: "OK", valor: 2 });
+  });
+
+  it("PROPORCAO usa só as respostas da pesquisa do indicador", () => {
+    const r = calcular(
+      [ind({ id: "vcras", tipo: "PROPORCAO", config: { perguntaId: "cras", opcoesNumerador: ["Sim"] }, pesquisaId: "pc" })],
+      respostas,
+      PERGUNTAS,
+    );
+    expect(r.get("vcras")).toEqual({ status: "OK", valor: 50 });
+  });
+
+  it("DISTRIBUICAO usa só as respostas da pesquisa do indicador", () => {
+    const r = calcular([ind({ id: "dist", tipo: "DISTRIBUICAO", config: { perguntaId: "cras" }, pesquisaId: "pc" })], respostas, PERGUNTAS);
+    expect(r.get("dist")).toEqual({
+      status: "OK_DISTRIBUICAO",
+      itens: [{ opcao: "Sim", contagem: 1, percentual: 50 }, { opcao: "Não", contagem: 1, percentual: 50 }],
+    });
+  });
+
+  it("COMPOSTO e CLASSIFICACAO mantêm o alinhamento por posição e respeitam o escopo", () => {
+    // Dependências sem pesquisa (veem todas), compostos restritos à pesquisa da criança.
+    const vcras = ind({ id: "vcras", tipo: "PROPORCAO", config: { perguntaId: "cras", opcoesNumerador: ["Sim"] } });
+    const cvac = ind({ id: "cvac", tipo: "PROPORCAO", config: { perguntaId: "vacina", opcoesNumerador: ["Sim"] } });
+    const mcc = ind({
+      id: "mcc",
+      tipo: "COMPOSTO",
+      config: { termos: [{ indicadorId: "vcras", peso: 1 }, { indicadorId: "cvac", peso: 1 }], divisor: 2 },
+      pesquisaId: "pc",
+    });
+    const faixas = ind({
+      id: "faixas",
+      tipo: "CLASSIFICACAO",
+      config: { indicadorId: "vcras", faixas: [{ rotulo: "Baixo", de: 0, ate: 50 }, { rotulo: "Alto", de: 50, ate: 100 }] },
+      pesquisaId: "pc",
+    });
+    const r = calcular([vcras, cvac, mcc, faixas], respostas, PERGUNTAS);
+    // A: (100+100)/2 = 100; B: (0+100)/2 = 50 -> 75. As gestantes dariam 50 cada e puxariam para baixo.
+    expect(r.get("mcc")).toEqual({ status: "OK", valor: 75 });
+    // vcras na criança: A=100 (Alto), B=0 (Baixo). Com gestantes seriam 4 Altos de 5.
+    expect(r.get("faixas")).toEqual({
+      status: "OK_FAIXAS",
+      faixas: [{ rotulo: "Baixo", percentual: 50 }, { rotulo: "Alto", percentual: 50 }],
+    });
+  });
+
+  it("indicador sem pesquisaId continua usando todas as respostas", () => {
+    const r = calcular(
+      [
+        ind({ id: "total", tipo: "CONTAGEM", config: {} }),
+        ind({ id: "vcras", tipo: "PROPORCAO", config: { perguntaId: "cras", opcoesNumerador: ["Sim"] } }),
+      ],
+      respostas,
+      PERGUNTAS,
+    );
+    expect(r.get("total")).toEqual({ status: "OK", valor: 5 });
+    expect(r.get("vcras")).toEqual({ status: "OK", valor: 80 });
   });
 });

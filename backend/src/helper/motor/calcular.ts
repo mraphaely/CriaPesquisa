@@ -28,6 +28,8 @@ export interface IndicadorParaCalculo {
   casasDecimais: number;
   status: "ATIVO" | "DEFINICAO_INCOMPLETA" | "INATIVO";
   motivoIncompleto?: string | null;
+  /** Com pesquisaId, o indicador só considera respostas dessa pesquisa; sem, todas. */
+  pesquisaId: string | null;
   recorte?: "ANTES_APOS" | null;
   recorteConfig?: { substituicoes: Array<{ de: string; para: string }> } | null;
 }
@@ -64,24 +66,34 @@ function aplicarSubstituicoes(config: ConfigIndicador, substituicoes: Substituic
 
 type LerValores = (indicadorId: string) => ValorIndividual[] | undefined;
 
+/**
+ * `noEscopo[i]` diz se a resposta i é da pesquisa do indicador. Os vetores
+ * nunca são filtrados — só anulados —, para que valores[i] continue sendo
+ * a resposta i em quem depende deste indicador.
+ */
 function agregarPorTipo(
   config: ConfigIndicador,
   valores: ValorIndividual[],
   respostas: RespostaAvaliavel[],
+  noEscopo: boolean[],
   casasDecimais: number,
   lerValores: LerValores,
 ): ResultadoIndicador {
   switch (config.tipo) {
     case "CLASSIFICACAO":
-      return classificar(lerValores(config.indicadorId) ?? [], config.faixas, casasDecimais);
+      return classificar(
+        (lerValores(config.indicadorId) ?? []).map((v, i) => (noEscopo[i] ? v : null)),
+        config.faixas,
+        casasDecimais,
+      );
     case "DISTRIBUICAO":
       return agregarDistribuicao(
-        respostas.map((r) => r.itens.get(config.perguntaId)?.opcoesSelecionadas ?? []),
+        respostas.map((r, i) => (noEscopo[i] ? r.itens.get(config.perguntaId)?.opcoesSelecionadas ?? [] : [])),
         casasDecimais,
       );
     case "CONTAGEM":
-      // Não há valor individual: cada resposta conta uma vez.
-      return agregar(config, respostas.map(() => 1), casasDecimais);
+      // Não há valor individual: cada resposta da pesquisa conta uma vez.
+      return agregar(config, noEscopo.map((dentro) => (dentro ? 1 : null)), casasDecimais);
     default:
       return agregar(config, valores, casasDecimais);
   }
@@ -207,8 +219,12 @@ export function calcular(
       }
     }
 
+    // Fora da pesquisa do indicador vale como branco: sai do numerador e do denominador.
+    const noEscopo = respostas.map((r) => indicador.pesquisaId == null || r.pesquisaId === indicador.pesquisaId);
+
     const calcularCenario = (cfg: ConfigIndicador, lerValores: LerValores) => {
       const valores = respostas.map((resposta, indice) => {
+        if (!noEscopo[indice]) return null;
         const deps = new Map<string, ValorIndividual>();
         for (const depId of dependencias) {
           // Posição, não busca: o valor do MCC da criança i está em valores[i].
@@ -216,7 +232,7 @@ export function calcular(
         }
         return avaliar(cfg, resposta, deps);
       });
-      return { valores, resultado: agregarPorTipo(cfg, valores, respostas, indicador.casasDecimais, lerValores) };
+      return { valores, resultado: agregarPorTipo(cfg, valores, respostas, noEscopo, indicador.casasDecimais, lerValores) };
     };
 
     const antes = calcularCenario(config, (dep) => valoresAntes.get(dep));

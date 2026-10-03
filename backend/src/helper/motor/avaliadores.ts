@@ -4,7 +4,10 @@ import type { ItemAvaliavel, RespostaAvaliavel, ValorIndividual } from "./tipos.
 export type { ItemAvaliavel, RespostaAvaliavel, ValorIndividual };
 
 export class ItemDuplicado extends Error {
-  constructor(respostaId: string, perguntaId: string) {
+  constructor(
+    public readonly respostaId: string,
+    public readonly perguntaId: string,
+  ) {
     super(`resposta ${respostaId} tem mais de um item para a pergunta ${perguntaId}`);
     this.name = "ItemDuplicado";
   }
@@ -13,13 +16,14 @@ export class ItemDuplicado extends Error {
 export function montarResposta(
   id: string,
   itens: Array<ItemAvaliavel & { perguntaId: string }>,
+  pesquisaId: string | null = null,
 ): RespostaAvaliavel {
   const mapa = new Map<string, ItemAvaliavel>();
   for (const { perguntaId, ...item } of itens) {
     if (mapa.has(perguntaId)) throw new ItemDuplicado(id, perguntaId);
     mapa.set(perguntaId, item);
   }
-  return { id, itens: mapa };
+  return { id, pesquisaId, itens: mapa };
 }
 
 /** Zero é resposta; branco é ausência. Confundir os dois muda o denominador. */

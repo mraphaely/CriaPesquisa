@@ -7,6 +7,8 @@ export interface ItemAvaliavel {
 
 export interface RespostaAvaliavel {
   id: string;
+  /** Pesquisa de origem: indicador com pesquisaId só enxerga as respostas dela. */
+  pesquisaId: string | null;
   itens: Map<string, ItemAvaliavel>;
 }
 

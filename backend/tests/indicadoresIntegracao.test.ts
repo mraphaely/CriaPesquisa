@@ -92,4 +92,19 @@ describe("indicadores ponta a ponta (banco real)", () => {
     // 2 de 3 respostas aprovadas marcaram "Sim".
     expect(res.body.resultados[CODIGO]).toEqual({ status: "OK", valor: 66.7 });
   });
+
+  it("CONTAGEM com pesquisaId conta só as respostas aprovadas daquela pesquisa", async () => {
+    const codigo = `${CODIGO}_CONT`;
+    const criado = await request(app)
+      .post("/api/indicadores")
+      .set("Authorization", auth)
+      .send({ codigo, nome: "Total de respostas (integração)", tipo: "CONTAGEM", pesquisaId, config: {} });
+    expect(criado.status).toBe(201);
+    indicadorIds.push(criado.body.indicador.id);
+
+    const res = await request(app).get("/api/indicadores/calculo").set("Authorization", auth);
+
+    expect(res.status).toBe(200);
+    expect(res.body.resultados[codigo]).toEqual({ status: "OK", valor: 3 });
+  });
 });

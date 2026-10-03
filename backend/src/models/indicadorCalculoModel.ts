@@ -30,13 +30,14 @@ export const indicadorCalculoModel = {
       where,
       select: {
         id: true,
+        pesquisaId: true,
         itens: {
           select: { perguntaId: true, valorTexto: true, valorNumero: true, opcoesSelecionadas: true },
         },
       },
     });
 
-    return respostas.map((r) => montarResposta(r.id, r.itens));
+    return respostas.map((r) => montarResposta(r.id, r.itens, r.pesquisaId));
   },
 
   async perguntasExistentes(): Promise<Set<string>> {
