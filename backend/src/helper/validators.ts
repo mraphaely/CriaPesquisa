@@ -147,3 +147,30 @@ export const atualizarPerguntaSchema = z
     }
   });
 export type AtualizarPerguntaInput = z.infer<typeof atualizarPerguntaSchema>;
+
+// ---------- Indicador ----------
+
+export const criarIndicadorSchema = z.object({
+  codigo: z.string().min(1).max(60),
+  nome: z.string().min(1),
+  objetivo: z.string().optional(),
+  tipo: z.enum([
+    "PROPORCAO", "CRUZAMENTO", "MEDIA", "DERIVADA",
+    "COMPOSTO", "CLASSIFICACAO", "CONTAGEM", "DISTRIBUICAO",
+  ]),
+  unidade: z.string().optional(),
+  casasDecimais: z.number().int().min(0).max(4).default(1),
+  pesquisaId: z.string().uuid().optional(),
+  config: z.unknown(),
+  recorte: z.literal("ANTES_APOS").optional(),
+  recorteConfig: z
+    .object({ substituicoes: z.array(z.object({ de: z.string().min(1), para: z.string().min(1) })).min(1) })
+    .optional(),
+  meta: z.number().optional(),
+  formulaOriginal: z.string().optional(),
+  origemPlanilha: z.number().int().optional(),
+});
+export type CriarIndicadorInput = z.infer<typeof criarIndicadorSchema>;
+
+export const atualizarIndicadorSchema = criarIndicadorSchema.partial();
+export type AtualizarIndicadorInput = z.infer<typeof atualizarIndicadorSchema>;

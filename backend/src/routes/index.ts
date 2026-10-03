@@ -7,6 +7,7 @@ import { relatorioRoutes } from "./relatorioRoutes.js";
 import { painelRoutes } from "./painelRoutes.js";
 import { usuarioRoutes } from "./usuarioRoutes.js";
 import { logRoutes } from "./logRoutes.js";
+import { indicadorRoutes } from "./indicadorRoutes.js";
 
 export const apiRoutes = Router();
 apiRoutes.use(healthRoutes);
@@ -17,3 +18,4 @@ apiRoutes.use(relatorioRoutes);
 apiRoutes.use(painelRoutes);
 apiRoutes.use(usuarioRoutes);
 apiRoutes.use(logRoutes);
+apiRoutes.use(indicadorRoutes);
