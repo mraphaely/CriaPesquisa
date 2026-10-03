@@ -258,10 +258,35 @@ describe("recorte ANTES/APÓS", () => {
     });
   });
 
-  it("indicador sem recorte que depende de um pareado não escolhe um lado em silêncio", () => {
+  describe("o recorte propaga para quem depende de um pareado", () => {
+    // Só VCRAS é pareado; CVAC (vacA) e CPUER não. MCC, IDTC e faixas sem recorte no cadastro.
+    //   MCC antes = (0×3 + 0×5 + 100×5)/13 = 38.46 ; depois = (100×3 + 0×5 + 100×5)/13 = 61.54.
+    const cvacSemPar = { ...cvacPar, recorte: null, recorteConfig: null };
     const mccSemRecorte = { ...mccPar, recorte: null };
-    const r = calcular([vcrasPar, cvacPar, cpuer, mccSemRecorte], RESP_PAR, PERG_PAR);
-    expect(r.get("mcc")).toMatchObject({ status: "INCOMPLETO", dependencia: "vcras" });
+    const idtc = ind({ id: "idtc", tipo: "COMPOSTO", config: { termos: [{ indicadorId: "mcc", peso: 1 }], divisor: 1 } });
+    const faixasIdtc = ind({
+      id: "faixasIdtc",
+      tipo: "CLASSIFICACAO",
+      config: { indicadorId: "idtc", faixas: [{ rotulo: "Baixo", de: 0, ate: 50 }, { rotulo: "Alto", de: 50, ate: 100 }] },
+    });
+    const r = calcular([vcrasPar, cvacSemPar, cpuer, mccSemRecorte, idtc, faixasIdtc], RESP_PAR, PERG_PAR);
+
+    it("composto sem recorte sai pareado, cada lado com o lado correspondente da dependência", () => {
+      expect(r.get("mcc")).toEqual({ antes: { status: "OK", valor: 38.46 }, apos: { status: "OK", valor: 61.54 } });
+    });
+
+    it("a propagação alcança o neto (composto e classificação)", () => {
+      expect(r.get("idtc")).toEqual({ antes: { status: "OK", valor: 38.46 }, apos: { status: "OK", valor: 61.54 } });
+      expect(r.get("faixasIdtc")).toEqual({
+        antes: { status: "OK_FAIXAS", faixas: [{ rotulo: "Baixo", percentual: 100 }, { rotulo: "Alto", percentual: 0 }] },
+        apos: { status: "OK_FAIXAS", faixas: [{ rotulo: "Baixo", percentual: 0 }, { rotulo: "Alto", percentual: 100 }] },
+      });
+    });
+
+    it("dependência não pareada continua simples", () => {
+      expect(r.get("cvac")).toEqual({ status: "OK", valor: 0 });
+      expect(r.get("cpuer")).toEqual({ status: "OK", valor: 100 });
+    });
   });
 
   it("composto pareado sem nenhuma dependência pareada não tem par: incompleto", () => {

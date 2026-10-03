@@ -160,9 +160,10 @@ export function calcular(
     let configApos: ConfigIndicador | null = null;
 
     if (!pareado && depPareada) {
-      // Sem recorte, teria de escolher um lado da dependência em silêncio.
-      marcarIncompleto(id, `depende de ${depPareada}, que é pareado ANTES/APÓS; este indicador precisa do recorte`, id, depPareada);
-      continue;
+      // O recorte propaga sozinho: quem consome um indicador pareado também sai
+      // pareado, cada lado calculado com o lado correspondente da dependência.
+      // Escolher um lado em silêncio daria número plausível e errado.
+      configApos = config;
     }
 
     if (pareado) {
