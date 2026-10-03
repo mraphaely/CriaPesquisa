@@ -1,5 +1,6 @@
 import type { Request, Response } from "express";
-import type { StatusIndicador } from "@prisma/client";
+import { Prisma } from "@prisma/client";
+import { z } from "zod";
 import { indicadorModel } from "../models/indicadorModel.js";
 import { registrarLog } from "../helper/auditoria.js";
 import { HttpError } from "../middleware/errorHandler.js";
@@ -21,6 +22,29 @@ function conferirConfig(tipo: CriarIndicadorInput["tipo"], config: unknown): str
  * ciclo na criação é impossível (nada consegue referenciar um id inexistente),
  * mas a checagem fica no mesmo caminho para não divergir das regras da edição.
  */
+const statusSchema = z.enum(["ATIVO", "DEFINICAO_INCOMPLETA", "INATIVO"]);
+
+/** Recusa (422) dependência para indicador inexistente/apagado e pesquisa inexistente, antes de gravar. */
+async function conferirReferencias(dependencias: string[], pesquisaId?: string): Promise<void> {
+  const unicas = [...new Set(dependencias)];
+  const ativos = new Set(await indicadorModel.idsAtivos(unicas));
+  const ausentes = unicas.filter((d) => !ativos.has(d));
+  if (ausentes.length > 0) {
+    throw new HttpError(422, "DEPENDENCIA_INEXISTENTE", "Config referencia indicador inexistente ou apagado", { ausentes });
+  }
+  if (pesquisaId && !(await indicadorModel.pesquisaExiste(pesquisaId))) {
+    throw new HttpError(422, "PESQUISA_INEXISTENTE", "Pesquisa não encontrada");
+  }
+}
+
+/** Traduz violação de unicidade do `codigo` em 409; demais erros seguem. */
+function traduzirErroDeGravacao(erro: unknown): never {
+  if (erro instanceof Prisma.PrismaClientKnownRequestError && erro.code === "P2002") {
+    throw new HttpError(409, "CODIGO_DUPLICADO", "Já existe um indicador com este código");
+  }
+  throw erro;
+}
+
 async function conferirCiclo(id: string, dependencias: string[]): Promise<void> {
   const grafo = await indicadorModel.grafoDeDependencias();
   grafo.set(id, dependencias);
@@ -35,7 +59,7 @@ async function conferirCiclo(id: string, dependencias: string[]): Promise<void> 
 }
 
 export async function listar(req: Request, res: Response) {
-  const status = (typeof req.query.status === "string" ? req.query.status : undefined) as StatusIndicador | undefined;
+  const status = req.query.status === undefined ? undefined : statusSchema.parse(req.query.status);
   const { page, pageSize } = parsePaginacao(req.query, 50);
   const { total, itens } = await indicadorModel.listar({ status, page, pageSize });
   res.json({ total, page, pageSize, itens });
@@ -52,9 +76,10 @@ export async function criar(req: Request, res: Response) {
   const dados = req.body as CriarIndicadorInput;
 
   const dependencias = conferirConfig(dados.tipo, dados.config);
+  await conferirReferencias(dependencias, dados.pesquisaId);
   await conferirCiclo("__novo__", dependencias);
 
-  const indicador = await indicadorModel.criar(dados, usuario.id, dependencias);
+  const indicador = await indicadorModel.criar(dados, usuario.id, dependencias).catch(traduzirErroDeGravacao);
   await registrarLog({
     entidade: "Indicador",
     entidadeId: indicador.id,
@@ -75,9 +100,10 @@ export async function atualizar(req: Request, res: Response) {
   const dados = req.body as AtualizarIndicadorInput;
   const tipo = dados.tipo ?? (atual.tipo as CriarIndicadorInput["tipo"]);
   const dependencias = conferirConfig(tipo, dados.config ?? atual.config);
+  await conferirReferencias(dependencias, dados.pesquisaId);
   await conferirCiclo(id, dependencias);
 
-  const indicador = await indicadorModel.atualizar(id, dados, usuario.id, dependencias);
+  const indicador = await indicadorModel.atualizar(id, dados, usuario.id, dependencias).catch(traduzirErroDeGravacao);
   await registrarLog({
     entidade: "Indicador",
     entidadeId: id,

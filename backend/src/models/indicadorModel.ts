@@ -34,6 +34,20 @@ export const indicadorModel = {
     return prisma.indicador.findFirst({ where: { id, deletedAt: null } });
   },
 
+  /** Dos ids recebidos, devolve só os que existem e não foram apagados. */
+  async idsAtivos(ids: string[]): Promise<string[]> {
+    if (ids.length === 0) return [];
+    const linhas = await prisma.indicador.findMany({
+      where: { id: { in: ids }, deletedAt: null },
+      select: { id: true },
+    });
+    return linhas.map((l) => l.id);
+  },
+
+  async pesquisaExiste(id: string): Promise<boolean> {
+    return (await prisma.pesquisa.count({ where: { id, deletedAt: null } })) > 0;
+  },
+
   listarAtivos() {
     return prisma.indicador.findMany({ where: { deletedAt: null, status: { not: "INATIVO" } } });
   },

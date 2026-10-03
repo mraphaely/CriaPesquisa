@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import request from "supertest";
+import { Prisma } from "@prisma/client";
 
 vi.mock("../src/models/indicadorModel.js");
 vi.mock("../src/helper/auditoria.js");
@@ -24,6 +25,8 @@ const CORPO_VALIDO = {
 beforeEach(() => {
   vi.clearAllMocks();
   vi.mocked(indicadorModel.grafoDeDependencias).mockResolvedValue(new Map());
+  vi.mocked(indicadorModel.idsAtivos).mockImplementation(async (ids: string[]) => ids);
+  vi.mocked(indicadorModel.pesquisaExiste).mockResolvedValue(true);
 });
 
 describe("POST /api/indicadores", () => {
@@ -72,6 +75,41 @@ describe("POST /api/indicadores", () => {
     expect(indicadorModel.criar).not.toHaveBeenCalled();
   });
 
+  it("codigo duplicado (P2002) -> 409 CODIGO_DUPLICADO", async () => {
+    vi.mocked(indicadorModel.criar).mockRejectedValue(
+      new Prisma.PrismaClientKnownRequestError("unique", { code: "P2002", clientVersion: "x" }),
+    );
+    const res = await request(app)
+      .post("/api/indicadores")
+      .set("Authorization", `Bearer ${tokenGestor}`)
+      .send(CORPO_VALIDO);
+    expect(res.status).toBe(409);
+    expect(res.body.error.code).toBe("CODIGO_DUPLICADO");
+    expect(registrarLog).not.toHaveBeenCalled();
+  });
+
+  it("dependência para indicador inexistente/apagado -> 422 e não grava", async () => {
+    vi.mocked(indicadorModel.idsAtivos).mockResolvedValue([]);
+    const res = await request(app)
+      .post("/api/indicadores")
+      .set("Authorization", `Bearer ${tokenGestor}`)
+      .send({ codigo: "X", nome: "X", tipo: "COMPOSTO", config: { termos: [{ indicadorId: "fantasma", peso: 1 }], divisor: 1 } });
+    expect(res.status).toBe(422);
+    expect(res.body.error.code).toBe("DEPENDENCIA_INEXISTENTE");
+    expect(indicadorModel.criar).not.toHaveBeenCalled();
+  });
+
+  it("pesquisaId inexistente -> 422 e não grava", async () => {
+    vi.mocked(indicadorModel.pesquisaExiste).mockResolvedValue(false);
+    const res = await request(app)
+      .post("/api/indicadores")
+      .set("Authorization", `Bearer ${tokenGestor}`)
+      .send({ ...CORPO_VALIDO, pesquisaId: "7b8f6a52-3c1d-4e9a-8f10-2d5b6c7e8a90" });
+    expect(res.status).toBe(422);
+    expect(res.body.error.code).toBe("PESQUISA_INEXISTENTE");
+    expect(indicadorModel.criar).not.toHaveBeenCalled();
+  });
+
 });
 
 describe("PUT /api/indicadores/:id", () => {
@@ -89,6 +127,31 @@ describe("PUT /api/indicadores/:id", () => {
     expect(res.body.error.code).toBe("DEPENDENCIA_CIRCULAR");
     expect(indicadorModel.atualizar).not.toHaveBeenCalled();
   });
+
+  it("codigo duplicado na edição (P2002) -> 409", async () => {
+    vi.mocked(indicadorModel.obterPorId).mockResolvedValue({ id: "i1", tipo: "PROPORCAO", config: CORPO_VALIDO.config } as never);
+    vi.mocked(indicadorModel.atualizar).mockRejectedValue(
+      new Prisma.PrismaClientKnownRequestError("unique", { code: "P2002", clientVersion: "x" }),
+    );
+    const res = await request(app)
+      .put("/api/indicadores/i1")
+      .set("Authorization", `Bearer ${tokenGestor}`)
+      .send({ codigo: "JA_EXISTE" });
+    expect(res.status).toBe(409);
+    expect(res.body.error.code).toBe("CODIGO_DUPLICADO");
+  });
+
+  it("dependência para indicador inexistente na edição -> 422", async () => {
+    vi.mocked(indicadorModel.obterPorId).mockResolvedValue({ id: "i1", tipo: "PROPORCAO", config: CORPO_VALIDO.config } as never);
+    vi.mocked(indicadorModel.idsAtivos).mockResolvedValue([]);
+    const res = await request(app)
+      .put("/api/indicadores/i1")
+      .set("Authorization", `Bearer ${tokenGestor}`)
+      .send({ tipo: "COMPOSTO", config: { termos: [{ indicadorId: "fantasma", peso: 1 }], divisor: 1 } });
+    expect(res.status).toBe(422);
+    expect(res.body.error.code).toBe("DEPENDENCIA_INEXISTENTE");
+    expect(indicadorModel.atualizar).not.toHaveBeenCalled();
+  });
 });
 
 describe("GET /api/indicadores", () => {
@@ -96,6 +159,18 @@ describe("GET /api/indicadores", () => {
     vi.mocked(indicadorModel.listar).mockResolvedValue({ total: 0, itens: [] } as never);
     const res = await request(app).get("/api/indicadores").set("Authorization", `Bearer ${tokenColetador}`);
     expect(res.status).toBe(200);
+  });
+
+  it("status inválido na query -> 422 sem consultar o model", async () => {
+    const res = await request(app).get("/api/indicadores?status=lixo").set("Authorization", `Bearer ${tokenGestor}`);
+    expect(res.status).toBe(422);
+    expect(indicadorModel.listar).not.toHaveBeenCalled();
+  });
+
+  it("status válido na query é repassado ao model", async () => {
+    vi.mocked(indicadorModel.listar).mockResolvedValue({ total: 0, itens: [] } as never);
+    await request(app).get("/api/indicadores?status=ATIVO").set("Authorization", `Bearer ${tokenGestor}`);
+    expect(indicadorModel.listar).toHaveBeenCalledWith(expect.objectContaining({ status: "ATIVO" }));
   });
 });
 
