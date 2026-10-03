@@ -64,6 +64,8 @@ describe("classificar", () => {
     const porRotulo = Object.fromEntries(r.faixas.map((f) => [f.rotulo, f.percentual]));
     expect(porRotulo["Crítico"]).toBe(0);
     expect(r.faixas.reduce((s, f) => s + f.percentual, 0)).toBeCloseTo(100, 6);
+    // Maior resto: 33,3 x3 = 99,9; a sobra de 0,1 vai à primeira faixa empatada (Baixo).
+    expect(r.faixas.map((f) => f.percentual)).toEqual([0, 33.4, 33.3, 33.3]);
   });
 
   it("o limite superior da última faixa é inclusivo", () => {

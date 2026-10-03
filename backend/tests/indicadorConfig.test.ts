@@ -58,6 +58,51 @@ describe("validarConfig", () => {
       validarConfig("CLASSIFICACAO", { indicadorId: "mcc", faixas: [{ rotulo: "X", de: 50, ate: 10 }] }),
     ).toThrow();
   });
+
+  it("recusa CLASSIFICACAO com faixas fora de ordem", () => {
+    expect(() =>
+      validarConfig("CLASSIFICACAO", {
+        indicadorId: "mcc",
+        faixas: [
+          { rotulo: "Alto", de: 50, ate: 100 },
+          { rotulo: "Baixo", de: 0, ate: 50 },
+        ],
+      }),
+    ).toThrow();
+  });
+
+  it("recusa CLASSIFICACAO com faixas sobrepostas", () => {
+    expect(() =>
+      validarConfig("CLASSIFICACAO", {
+        indicadorId: "mcc",
+        faixas: [
+          { rotulo: "Baixo", de: 0, ate: 60 },
+          { rotulo: "Alto", de: 50, ate: 100 },
+        ],
+      }),
+    ).toThrow();
+  });
+
+  it("aceita CLASSIFICACAO com faixas encostadas ou com vão entre elas", () => {
+    expect(() =>
+      validarConfig("CLASSIFICACAO", {
+        indicadorId: "mcc",
+        faixas: [
+          { rotulo: "Baixo", de: 0, ate: 50 },
+          { rotulo: "Alto", de: 50, ate: 100 },
+        ],
+      }),
+    ).not.toThrow();
+    expect(() =>
+      validarConfig("CLASSIFICACAO", {
+        indicadorId: "mcc",
+        faixas: [
+          { rotulo: "Baixo", de: 0, ate: 40 },
+          { rotulo: "Alto", de: 60, ate: 100 },
+        ],
+      }),
+    ).not.toThrow();
+  });
 });
 
 describe("DERIVADA: variáveis e divisão", () => {

@@ -80,7 +80,10 @@ const classificacao = z.object({
   faixas: z
     .array(z.object({ rotulo: z.string().min(1), de: z.number().finite(), ate: z.number().finite() }).strict())
     .min(1)
-    .refine((fs) => fs.every((f) => f.de < f.ate), { message: "faixa com início maior que o fim" }),
+    .refine((fs) => fs.every((f) => f.de < f.ate), { message: "faixa com início maior que o fim" })
+    .refine((fs) => fs.every((f, i) => i === 0 || fs[i - 1].ate <= f.de), {
+      message: "faixas devem estar em ordem crescente e sem sobreposição",
+    }),
 }).strict();
 
 const contagem = z.object({ tipo: z.literal("CONTAGEM") }).strict();
