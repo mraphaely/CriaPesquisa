@@ -53,6 +53,8 @@ export const indicadorModel = {
   },
 
   async criar(dados: CriarIndicadorInput, usuarioId: string, dependencias: string[]) {
+    // Explícito, não o default da coluna (DEFINICAO_INCOMPLETA): indicador da API nasce calculável.
+    const status = dados.status ?? "ATIVO";
     return prisma.indicador.create({
       data: {
         codigo: dados.codigo,
@@ -68,6 +70,8 @@ export const indicadorModel = {
         meta: dados.meta,
         formulaOriginal: dados.formulaOriginal,
         origemPlanilha: dados.origemPlanilha,
+        status,
+        motivoIncompleto: status === "DEFINICAO_INCOMPLETA" ? dados.motivoIncompleto : null,
         createdById: usuarioId,
         dependeDe: { create: dependencias.map((dependeDeId) => ({ dependeDeId })) },
       },
@@ -81,6 +85,8 @@ export const indicadorModel = {
         where: { id },
         data: {
           ...dados,
+          // Saiu de DEFINICAO_INCOMPLETA: o motivo antigo não descreve mais nada.
+          ...(dados.status &&dados.status !== "DEFINICAO_INCOMPLETA" ? { motivoIncompleto: null } : {}),
           config: dados.config as Prisma.InputJsonValue,
           recorteConfig: dados.recorteConfig as Prisma.InputJsonValue | undefined,
           updatedById: usuarioId,

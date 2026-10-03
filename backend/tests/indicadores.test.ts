@@ -110,6 +110,72 @@ describe("POST /api/indicadores", () => {
     expect(indicadorModel.criar).not.toHaveBeenCalled();
   });
 
+  it("DEFINICAO_INCOMPLETA sem motivo -> 422 e não grava", async () => {
+    const res = await request(app)
+      .post("/api/indicadores")
+      .set("Authorization", `Bearer ${tokenGestor}`)
+      .send({ ...CORPO_VALIDO, status: "DEFINICAO_INCOMPLETA" });
+    expect(res.status).toBe(422);
+    expect(res.body.error.details.fieldErrors.motivoIncompleto).toBeDefined();
+    expect(indicadorModel.criar).not.toHaveBeenCalled();
+  });
+
+  it("DEFINICAO_INCOMPLETA com motivo em branco -> 422", async () => {
+    const res = await request(app)
+      .post("/api/indicadores")
+      .set("Authorization", `Bearer ${tokenGestor}`)
+      .send({ ...CORPO_VALIDO, status: "DEFINICAO_INCOMPLETA", motivoIncompleto: "   " });
+    expect(res.status).toBe(422);
+    expect(indicadorModel.criar).not.toHaveBeenCalled();
+  });
+
+  it("DEFINICAO_INCOMPLETA com motivo -> 201", async () => {
+    vi.mocked(indicadorModel.criar).mockResolvedValue({ id: "i1", ...CORPO_VALIDO } as never);
+    const res = await request(app)
+      .post("/api/indicadores")
+      .set("Authorization", `Bearer ${tokenGestor}`)
+      .send({ ...CORPO_VALIDO, status: "DEFINICAO_INCOMPLETA", motivoIncompleto: "falta a pergunta de renda" });
+    expect(res.status).toBe(201);
+    expect(registrarLog).toHaveBeenCalledOnce();
+  });
+
+  it("status fora do enum -> 422", async () => {
+    const res = await request(app)
+      .post("/api/indicadores")
+      .set("Authorization", `Bearer ${tokenGestor}`)
+      .send({ ...CORPO_VALIDO, status: "LIGADO" });
+    expect(res.status).toBe(422);
+    expect(indicadorModel.criar).not.toHaveBeenCalled();
+  });
+
+  it("recorte ANTES_APOS sem recorteConfig -> 422", async () => {
+    const res = await request(app)
+      .post("/api/indicadores")
+      .set("Authorization", `Bearer ${tokenGestor}`)
+      .send({ ...CORPO_VALIDO, recorte: "ANTES_APOS" });
+    expect(res.status).toBe(422);
+    expect(res.body.error.details.fieldErrors.recorteConfig).toBeDefined();
+    expect(indicadorModel.criar).not.toHaveBeenCalled();
+  });
+
+  it("recorteConfig sem recorte ANTES_APOS -> 422", async () => {
+    const res = await request(app)
+      .post("/api/indicadores")
+      .set("Authorization", `Bearer ${tokenGestor}`)
+      .send({ ...CORPO_VALIDO, recorteConfig: { substituicoes: [{ de: "p1", para: "p2" }] } });
+    expect(res.status).toBe(422);
+    expect(res.body.error.details.fieldErrors.recorte).toBeDefined();
+    expect(indicadorModel.criar).not.toHaveBeenCalled();
+  });
+
+  it("recorte ANTES_APOS com recorteConfig -> 201", async () => {
+    vi.mocked(indicadorModel.criar).mockResolvedValue({ id: "i1", ...CORPO_VALIDO } as never);
+    const res = await request(app)
+      .post("/api/indicadores")
+      .set("Authorization", `Bearer ${tokenGestor}`)
+      .send({ ...CORPO_VALIDO, recorte: "ANTES_APOS", recorteConfig: { substituicoes: [{ de: "p1", para: "p2" }] } });
+    expect(res.status).toBe(201);
+  });
 });
 
 describe("PUT /api/indicadores/:id", () => {
@@ -150,6 +216,36 @@ describe("PUT /api/indicadores/:id", () => {
       .send({ tipo: "COMPOSTO", config: { termos: [{ indicadorId: "fantasma", peso: 1 }], divisor: 1 } });
     expect(res.status).toBe(422);
     expect(res.body.error.code).toBe("DEPENDENCIA_INEXISTENTE");
+    expect(indicadorModel.atualizar).not.toHaveBeenCalled();
+  });
+
+  it("promove para ATIVO -> 200, repassa o status e audita", async () => {
+    vi.mocked(indicadorModel.obterPorId).mockResolvedValue({ id: "i1", tipo: "PROPORCAO", config: CORPO_VALIDO.config, status: "DEFINICAO_INCOMPLETA", motivoIncompleto: "x" } as never);
+    vi.mocked(indicadorModel.atualizar).mockResolvedValue({ id: "i1", status: "ATIVO", motivoIncompleto: null } as never);
+    const res = await request(app)
+      .put("/api/indicadores/i1")
+      .set("Authorization", `Bearer ${tokenGestor}`)
+      .send({ status: "ATIVO" });
+    expect(res.status).toBe(200);
+    expect(indicadorModel.atualizar).toHaveBeenCalledWith("i1", expect.objectContaining({ status: "ATIVO" }), "u1", []);
+    expect(registrarLog).toHaveBeenCalledOnce();
+  });
+
+  it("rebaixa para DEFINICAO_INCOMPLETA sem motivo -> 422", async () => {
+    const res = await request(app)
+      .put("/api/indicadores/i1")
+      .set("Authorization", `Bearer ${tokenGestor}`)
+      .send({ status: "DEFINICAO_INCOMPLETA" });
+    expect(res.status).toBe(422);
+    expect(indicadorModel.atualizar).not.toHaveBeenCalled();
+  });
+
+  it("recorteConfig sem recorte na edição -> 422", async () => {
+    const res = await request(app)
+      .put("/api/indicadores/i1")
+      .set("Authorization", `Bearer ${tokenGestor}`)
+      .send({ recorteConfig: { substituicoes: [{ de: "p1", para: "p2" }] } });
+    expect(res.status).toBe(422);
     expect(indicadorModel.atualizar).not.toHaveBeenCalled();
   });
 });

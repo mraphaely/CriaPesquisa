@@ -150,7 +150,7 @@ export type AtualizarPerguntaInput = z.infer<typeof atualizarPerguntaSchema>;
 
 // ---------- Indicador ----------
 
-export const criarIndicadorSchema = z.object({
+const indicadorBaseSchema = z.object({
   codigo: z.string().min(1).max(60),
   nome: z.string().min(1),
   objetivo: z.string().optional(),
@@ -169,8 +169,41 @@ export const criarIndicadorSchema = z.object({
   meta: z.number().optional(),
   formulaOriginal: z.string().optional(),
   origemPlanilha: z.number().int().optional(),
+  // Sem status, o indicador nasce ATIVO (indicadorModel.criar): a API cadastra para calcular.
+  status: z.enum(["ATIVO", "DEFINICAO_INCOMPLETA", "INATIVO"]).optional(),
+  motivoIncompleto: z.string().optional(),
 });
+
+/**
+ * Regras entre campos, as mesmas na criação e na edição. Na edição valem sobre o
+ * corpo enviado: quem mexe no recorte manda `recorte` e `recorteConfig` juntos.
+ */
+function regrasDoIndicador(dados: Partial<z.infer<typeof indicadorBaseSchema>>, ctx: z.RefinementCtx) {
+  if (dados.status === "DEFINICAO_INCOMPLETA" && !dados.motivoIncompleto?.trim()) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["motivoIncompleto"],
+      message: "Definição incompleta exige o motivo.",
+    });
+  }
+  if (dados.recorte === "ANTES_APOS" && dados.recorteConfig === undefined) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["recorteConfig"],
+      message: "Recorte ANTES/APÓS exige recorteConfig.",
+    });
+  }
+  if (dados.recorteConfig !== undefined && dados.recorte !== "ANTES_APOS") {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["recorte"],
+      message: "recorteConfig só vale com recorte ANTES_APOS.",
+    });
+  }
+}
+
+export const criarIndicadorSchema = indicadorBaseSchema.superRefine(regrasDoIndicador);
 export type CriarIndicadorInput = z.infer<typeof criarIndicadorSchema>;
 
-export const atualizarIndicadorSchema = criarIndicadorSchema.partial();
+export const atualizarIndicadorSchema = indicadorBaseSchema.partial().superRefine(regrasDoIndicador);
 export type AtualizarIndicadorInput = z.infer<typeof atualizarIndicadorSchema>;
