@@ -8,6 +8,10 @@ import { parsePaginacao } from "../helper/paginacao.js";
 import { validarConfig, indicadoresReferenciados } from "../helper/indicadorConfig.js";
 import { ordenarPorDependencia, CicloDetectado } from "../helper/dependencias.js";
 import type { CriarIndicadorInput, AtualizarIndicadorInput } from "../helper/validators.js";
+import { indicadorCalculoModel } from "../models/indicadorCalculoModel.js";
+import { extrairFiltrosIndicador, chaveDeCache } from "../helper/filtrosIndicador.js";
+import { lerCache, gravarCache, invalidarCache } from "../helper/cacheIndicadores.js";
+import { calcular, type IndicadorParaCalculo } from "../helper/motor/calcular.js";
 
 /** Valida a config contra o tipo e devolve de quais indicadores este depende. */
 function conferirConfig(tipo: CriarIndicadorInput["tipo"], config: unknown): string[] {
@@ -88,6 +92,7 @@ export async function criar(req: Request, res: Response) {
     dadosDepois: indicador,
     ip: req.ip,
   });
+  invalidarCache();
   res.status(201).json({ indicador });
 }
 
@@ -113,6 +118,7 @@ export async function atualizar(req: Request, res: Response) {
     dadosDepois: indicador,
     ip: req.ip,
   });
+  invalidarCache();
   res.json({ indicador });
 }
 
@@ -138,5 +144,41 @@ export async function remover(req: Request, res: Response) {
     dadosAntes: atual,
     ip: req.ip,
   });
+  invalidarCache();
   res.status(204).end();
+}
+
+export async function calculo(req: Request, res: Response) {
+  const filtros = extrairFiltrosIndicador(req.query);
+  const chave = chaveDeCache(filtros);
+
+  const emCache = lerCache<Record<string, unknown>>(chave);
+  if (emCache) return res.json({ resultados: emCache, cache: true });
+
+  const [indicadores, respostas, perguntas] = await Promise.all([
+    indicadorModel.listarAtivos(),
+    indicadorCalculoModel.carregarRespostas(filtros),
+    indicadorCalculoModel.perguntasExistentes(),
+  ]);
+  const paraCalculo = indicadores as unknown as IndicadorParaCalculo[];
+
+  let calculados;
+  try {
+    calculados = calcular(paraCalculo, respostas, perguntas);
+  } catch (erro) {
+    // Ciclo já gravado (corrida entre dois salvamentos): dado corrompido, não falha do servidor.
+    if (erro instanceof CicloDetectado) {
+      throw new HttpError(409, "DEPENDENCIA_CIRCULAR", erro.message, { ciclo: erro.ciclo });
+    }
+    throw erro;
+  }
+
+  // A chave pública é o código, não o uuid: é o que o painel e a planilha usam.
+  const porCodigo = new Map(paraCalculo.map((i) => [i.id, i.codigo]));
+  const resultados = Object.fromEntries(
+    [...calculados.entries()].map(([id, resultado]) => [porCodigo.get(id) ?? id, resultado]),
+  );
+
+  gravarCache(chave, resultados);
+  res.json({ resultados, cache: false });
 }
