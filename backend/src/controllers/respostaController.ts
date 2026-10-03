@@ -30,6 +30,7 @@ function parseStatus(valor: unknown): StatusResposta | undefined {
 export function extrairFiltrosBase(query: Request["query"]): Omit<ListarRespostasFiltros, "page" | "pageSize"> {
   return {
     municipio: parseQueryString(query.municipio),
+    regional: parseQueryString(query.regional),
     unidade: parseQueryString(query.unidade),
     status: parseStatus(query.status),
     de: parseQueryDate(query.de),

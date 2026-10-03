@@ -4,6 +4,7 @@ import type { CriarRespostaInput, AtualizarRespostaInput } from "../helper/valid
 
 export interface ListarRespostasFiltros {
   municipio?: string;
+  regional?: string;
   unidade?: string;
   status?: StatusResposta;
   de?: Date;
@@ -17,6 +18,7 @@ const resumoColetador = { select: { id: true, nome: true, papel: true } };
 function construirWhere(pesquisaId: string, filtros: ListarRespostasFiltros = {}): Prisma.RespostaWhereInput {
   const where: Prisma.RespostaWhereInput = { pesquisaId, deletedAt: null };
   if (filtros.municipio) where.municipio = filtros.municipio;
+  if (filtros.regional) where.regional = filtros.regional;
   if (filtros.unidade) where.unidade = filtros.unidade;
   if (filtros.status) where.status = filtros.status;
   if (filtros.de || filtros.ate) {
