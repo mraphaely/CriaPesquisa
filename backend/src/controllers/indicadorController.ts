@@ -12,6 +12,7 @@ import { indicadorCalculoModel } from "../models/indicadorCalculoModel.js";
 import { extrairFiltrosIndicador, chaveDeCache } from "../helper/filtrosIndicador.js";
 import { lerCache, gravarCache, invalidarCache, geracaoAtual } from "../helper/cacheIndicadores.js";
 import { calcular, type IndicadorParaCalculo } from "../helper/motor/calcular.js";
+import { ItemDuplicado } from "../helper/motor/avaliadores.js";
 
 /** Valida a config contra o tipo e devolve de quais indicadores este depende. */
 function conferirConfig(tipo: CriarIndicadorInput["tipo"], config: unknown): string[] {
@@ -84,6 +85,8 @@ export async function criar(req: Request, res: Response) {
   await conferirCiclo("__novo__", dependencias);
 
   const indicador = await indicadorModel.criar(dados, usuario.id, dependencias).catch(traduzirErroDeGravacao);
+  // Logo após gravar: se a auditoria falhar, o cache já não serve número velho.
+  invalidarCache();
   await registrarLog({
     entidade: "Indicador",
     entidadeId: indicador.id,
@@ -92,7 +95,6 @@ export async function criar(req: Request, res: Response) {
     dadosDepois: indicador,
     ip: req.ip,
   });
-  invalidarCache();
   res.status(201).json({ indicador });
 }
 
@@ -109,6 +111,7 @@ export async function atualizar(req: Request, res: Response) {
   await conferirCiclo(id, dependencias);
 
   const indicador = await indicadorModel.atualizar(id, dados, usuario.id, dependencias).catch(traduzirErroDeGravacao);
+  invalidarCache();
   await registrarLog({
     entidade: "Indicador",
     entidadeId: id,
@@ -118,7 +121,6 @@ export async function atualizar(req: Request, res: Response) {
     dadosDepois: indicador,
     ip: req.ip,
   });
-  invalidarCache();
   res.json({ indicador });
 }
 
@@ -136,6 +138,7 @@ export async function remover(req: Request, res: Response) {
   }
 
   await indicadorModel.softDelete(id, usuario.id);
+  invalidarCache();
   await registrarLog({
     entidade: "Indicador",
     entidadeId: id,
@@ -144,7 +147,6 @@ export async function remover(req: Request, res: Response) {
     dadosAntes: atual,
     ip: req.ip,
   });
-  invalidarCache();
   res.status(204).end();
 }
 
@@ -160,7 +162,13 @@ export async function calculo(req: Request, res: Response) {
     indicadorModel.listarAtivos(),
     indicadorCalculoModel.carregarRespostas(filtros),
     indicadorCalculoModel.perguntasExistentes(),
-  ]);
+  ]).catch((erro: unknown) => {
+    // Resposta gravada com dois itens para a mesma pergunta: dado corrompido, não falha do servidor.
+    if (erro instanceof ItemDuplicado) {
+      throw new HttpError(409, "DADO_INCONSISTENTE", erro.message, { respostaId: erro.respostaId });
+    }
+    throw erro;
+  });
   const paraCalculo = indicadores as unknown as IndicadorParaCalculo[];
 
   let calculados;

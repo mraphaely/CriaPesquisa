@@ -4,9 +4,9 @@ import { montarResposta, type RespostaAvaliavel } from "../helper/motor/avaliado
 import type { FiltrosIndicador } from "../helper/filtrosIndicador.js";
 
 export const indicadorCalculoModel = {
-  /** Só respostas aprovadas e não excluídas entram em indicador. */
+  /** Só respostas aprovadas, não excluídas e de pesquisa não excluída entram em indicador. */
   async carregarRespostas(filtros: FiltrosIndicador): Promise<RespostaAvaliavel[]> {
-    const where: Prisma.RespostaWhereInput = { deletedAt: null, status: "APROVADA" };
+    const where: Prisma.RespostaWhereInput = { deletedAt: null, status: "APROVADA", pesquisa: { deletedAt: null } };
     if (filtros.pesquisaId) where.pesquisaId = filtros.pesquisaId;
     if (filtros.municipio) where.municipio = filtros.municipio;
     if (filtros.regional) where.regional = filtros.regional;

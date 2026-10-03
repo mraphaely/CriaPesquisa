@@ -20,7 +20,26 @@ beforeEach(() => {
 describe("indicadorCalculoModel.carregarRespostas", () => {
   it("sem filtros: só aprovadas e não excluídas", async () => {
     await indicadorCalculoModel.carregarRespostas({});
-    expect(whereUsado()).toEqual({ deletedAt: null, status: "APROVADA" });
+    expect(whereUsado()).toEqual({ deletedAt: null, status: "APROVADA", pesquisa: { deletedAt: null } });
+  });
+
+  it("respostas de pesquisa apagada não entram", async () => {
+    await indicadorCalculoModel.carregarRespostas({ pesquisaId: "ps1" });
+    expect(whereUsado().pesquisa).toEqual({ deletedAt: null });
+  });
+
+  it("resposta com item duplicado lança ItemDuplicado com o respostaId", async () => {
+    vi.mocked(prisma.resposta.findMany).mockResolvedValue([
+      {
+        id: "r7",
+        pesquisaId: "ps1",
+        itens: [
+          { perguntaId: "p1", valorTexto: null, valorNumero: 1, opcoesSelecionadas: [] },
+          { perguntaId: "p1", valorTexto: null, valorNumero: 2, opcoesSelecionadas: [] },
+        ],
+      },
+    ] as never);
+    await expect(indicadorCalculoModel.carregarRespostas({})).rejects.toMatchObject({ name: "ItemDuplicado", respostaId: "r7" });
   });
 
   it("aplica pesquisa, município, regional e período", async () => {

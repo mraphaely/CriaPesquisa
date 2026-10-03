@@ -9,7 +9,8 @@ import { createApp } from "../src/app.js";
 import { indicadorModel } from "../src/models/indicadorModel.js";
 import { indicadorCalculoModel } from "../src/models/indicadorCalculoModel.js";
 import { invalidarCache } from "../src/helper/cacheIndicadores.js";
-import { montarResposta } from "../src/helper/motor/avaliadores.js";
+import { montarResposta, ItemDuplicado } from "../src/helper/motor/avaliadores.js";
+import { registrarLog } from "../src/helper/auditoria.js";
 import { gerarToken } from "../src/helper/token.js";
 
 const app = createApp();
@@ -92,6 +93,22 @@ describe("GET /api/indicadores/calculo", () => {
     expect(indicadorCalculoModel.carregarRespostas).toHaveBeenCalledTimes(2);
   });
 
+  it("resposta com item duplicado no banco vira 409 DADO_INCONSISTENTE com o respostaId, não 500", async () => {
+    vi.mocked(indicadorCalculoModel.carregarRespostas).mockRejectedValueOnce(new ItemDuplicado("r9", "cras"));
+
+    const res = await request(app).get("/api/indicadores/calculo").set("Authorization", `Bearer ${token}`);
+
+    expect(res.status).toBe(409);
+    expect(res.body.error.code).toBe("DADO_INCONSISTENTE");
+    expect(res.body.error.details).toEqual({ respostaId: "r9" });
+  });
+
+  it("filtro de data inválido -> 422 sem consultar o banco", async () => {
+    const res = await request(app).get("/api/indicadores/calculo?de=lixo").set("Authorization", `Bearer ${token}`);
+    expect(res.status).toBe(422);
+    expect(indicadorCalculoModel.carregarRespostas).not.toHaveBeenCalled();
+  });
+
   it("não guarda em cache o cálculo que falhou", async () => {
     vi.mocked(indicadorModel.listarAtivos).mockRejectedValueOnce(new Error("falha"));
     await request(app).get("/api/indicadores/calculo").set("Authorization", `Bearer ${token}`);
@@ -136,5 +153,35 @@ describe("invalidação do cache em escrita de indicador", () => {
     const res = await request(app).delete("/api/indicadores/i1").set("Authorization", `Bearer ${tokenGestor}`);
     expect(res.status).toBe(204);
     expect(await recalculou()).toBe(true);
+  });
+
+  // A escrita já foi feita quando a auditoria roda: se ela falhar, o cache não pode ficar velho.
+  describe("invalida antes da auditoria (falha no registrarLog não deixa cache velho)", () => {
+    beforeEach(() => {
+      vi.mocked(registrarLog).mockRejectedValueOnce(new Error("auditoria fora"));
+    });
+
+    it("criar", async () => {
+      await aquecer();
+      vi.mocked(indicadorModel.criar).mockResolvedValue({ id: "i1" } as never);
+      await request(app).post("/api/indicadores").set("Authorization", `Bearer ${tokenGestor}`)
+        .send({ codigo: "X", nome: "X", tipo: "PROPORCAO", config: { perguntaId: "cras", opcoesNumerador: ["Sim"] } });
+      expect(await recalculou()).toBe(true);
+    });
+
+    it("atualizar", async () => {
+      await aquecer();
+      vi.mocked(indicadorModel.obterPorId).mockResolvedValue({ id: "i1", tipo: "PROPORCAO", config: VCRAS.config } as never);
+      vi.mocked(indicadorModel.atualizar).mockResolvedValue({ id: "i1" } as never);
+      await request(app).put("/api/indicadores/i1").set("Authorization", `Bearer ${tokenGestor}`).send({ nome: "Novo" });
+      expect(await recalculou()).toBe(true);
+    });
+
+    it("remover", async () => {
+      await aquecer();
+      vi.mocked(indicadorModel.obterPorId).mockResolvedValue({ id: "i1" } as never);
+      await request(app).delete("/api/indicadores/i1").set("Authorization", `Bearer ${tokenGestor}`);
+      expect(await recalculou()).toBe(true);
+    });
   });
 });

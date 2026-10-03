@@ -52,6 +52,11 @@ export function validarRespostaContraPerguntas(
       erros.push("pergunta desconhecida");
       continue;
     }
+    // Dois itens para a mesma pergunta: qual vale? O motor de indicadores recusa o dado.
+    if (itemPorPerguntaId.has(item.perguntaId)) {
+      erros.push(`${perguntasPorId.get(item.perguntaId)!.enunciado}: pergunta respondida mais de uma vez`);
+      continue;
+    }
     itemPorPerguntaId.set(item.perguntaId, item);
   }
 

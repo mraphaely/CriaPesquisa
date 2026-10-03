@@ -16,8 +16,21 @@ describe("extrairFiltrosIndicador", () => {
     expect(f.de?.toISOString().slice(0, 10)).toBe("2026-01-01");
   });
 
-  it("ignora data inválida em vez de gerar filtro impossível", () => {
-    expect(extrairFiltrosIndicador({ de: "ontem" }).de).toBeUndefined();
+  it("data inválida em `de` é recusada (422), não ignorada", () => {
+    expect(() => extrairFiltrosIndicador({ de: "ontem" })).toThrow(
+      expect.objectContaining({ status: 422, code: "FILTRO_INVALIDO" }),
+    );
+  });
+
+  it("data inválida em `ate` é recusada (422), não ignorada", () => {
+    expect(() => extrairFiltrosIndicador({ ate: "lixo" })).toThrow(
+      expect.objectContaining({ status: 422, code: "FILTRO_INVALIDO" }),
+    );
+  });
+
+  it("data ausente ou vazia continua sem filtro", () => {
+    expect(extrairFiltrosIndicador({ de: "" }).de).toBeUndefined();
+    expect(extrairFiltrosIndicador({}).ate).toBeUndefined();
   });
 
   it("ignora parâmetro repetido (array na query)", () => {

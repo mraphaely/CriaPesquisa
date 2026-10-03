@@ -65,3 +65,29 @@ describe("escrita de resposta invalida o cache dos indicadores", () => {
     expect(lerCache("k")).toEqual({ VCRAS: 1 });
   });
 });
+
+// Pesquisa apagada tira as respostas dela do cálculo (e restaurada as devolve).
+describe("apagar e restaurar pesquisa invalidam o cache dos indicadores", () => {
+  const authAdmin = `Bearer ${gerarToken({ sub: "u2", papel: "ADMIN" })}`;
+
+  it("remover (soft delete)", async () => {
+    vi.mocked(pesquisaModel.softDelete).mockResolvedValue({ id: "p1" } as never);
+    const res = await request(app).delete("/api/pesquisas/p1").set("Authorization", auth);
+    expect(res.status).toBe(204);
+    expect(lerCache("k")).toBeUndefined();
+  });
+
+  it("restaurar", async () => {
+    vi.mocked(pesquisaModel.restaurar).mockResolvedValue({ id: "p1" } as never);
+    const res = await request(app).post("/api/pesquisas/p1/restaurar").set("Authorization", authAdmin);
+    expect(res.status).toBe(200);
+    expect(lerCache("k")).toBeUndefined();
+  });
+
+  it("remover pesquisa inexistente não invalida", async () => {
+    vi.mocked(pesquisaModel.obterPorId).mockResolvedValue(null as never);
+    const res = await request(app).delete("/api/pesquisas/p1").set("Authorization", auth);
+    expect(res.status).toBe(404);
+    expect(lerCache("k")).toEqual({ VCRAS: 1 });
+  });
+});

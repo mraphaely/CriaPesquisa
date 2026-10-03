@@ -2,6 +2,7 @@ import type { Request, Response } from "express";
 import type { StatusPesquisa } from "@prisma/client";
 import { pesquisaModel } from "../models/pesquisaModel.js";
 import { registrarLog } from "../helper/auditoria.js";
+import { invalidarCache } from "../helper/cacheIndicadores.js";
 import { snapshotPesquisa } from "../helper/versao.js";
 import { HttpError } from "../middleware/errorHandler.js";
 import { parsePaginacao } from "../helper/paginacao.js";
@@ -80,6 +81,7 @@ export async function remover(req: Request, res: Response) {
   if (!atual) throw new HttpError(404, "NAO_ENCONTRADA", "Pesquisa não encontrada");
 
   await pesquisaModel.softDelete(id, usuario.id);
+  invalidarCache(); // as respostas desta pesquisa saem dos indicadores
   await registrarLog({
     entidade: "Pesquisa",
     entidadeId: id,
@@ -171,6 +173,7 @@ export async function restaurar(req: Request, res: Response) {
   const { id } = req.params;
 
   const pesquisa = await pesquisaModel.restaurar(id);
+  invalidarCache(); // as respostas desta pesquisa voltam aos indicadores
   await registrarLog({
     entidade: "Pesquisa",
     entidadeId: id,
