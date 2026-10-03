@@ -4,6 +4,7 @@ import { respostaModel } from "../models/respostaModel.js";
 import type { ListarRespostasFiltros } from "../models/respostaModel.js";
 import { pesquisaModel } from "../models/pesquisaModel.js";
 import { registrarLog } from "../helper/auditoria.js";
+import { invalidarCache } from "../helper/cacheIndicadores.js";
 import { validarRespostaContraPerguntas } from "../helper/validarResposta.js";
 import { parsePaginacao } from "../helper/paginacao.js";
 import { HttpError } from "../middleware/errorHandler.js";
@@ -62,6 +63,7 @@ export async function criar(req: Request, res: Response) {
   }
 
   const resposta = await respostaModel.criar(pesquisaId, usuario.id, dados);
+  invalidarCache();
   await registrarLog({
     entidade: "Resposta",
     entidadeId: resposta.id,
@@ -97,6 +99,7 @@ export async function atualizar(req: Request, res: Response) {
   }
 
   const resposta = await respostaModel.atualizar(id, dados);
+  invalidarCache();
   await registrarLog({
     entidade: "Resposta",
     entidadeId: id,
@@ -118,6 +121,7 @@ export async function aprovar(req: Request, res: Response) {
   if (!atual) throw new HttpError(404, "NAO_ENCONTRADA", "Resposta não encontrada");
 
   const resposta = await respostaModel.mudarStatus(id, "APROVADA", usuario.id);
+  invalidarCache();
   await registrarLog({
     entidade: "Resposta",
     entidadeId: id,
@@ -140,6 +144,7 @@ export async function reprovar(req: Request, res: Response) {
   if (!atual) throw new HttpError(404, "NAO_ENCONTRADA", "Resposta não encontrada");
 
   const resposta = await respostaModel.mudarStatus(id, "REPROVADA", usuario.id, observacao);
+  invalidarCache();
   await registrarLog({
     entidade: "Resposta",
     entidadeId: id,
@@ -179,6 +184,7 @@ export async function remover(req: Request, res: Response) {
   if (!atual) throw new HttpError(404, "NAO_ENCONTRADA", "Resposta não encontrada");
 
   await respostaModel.softDelete(id, usuario.id);
+  invalidarCache();
   await registrarLog({
     entidade: "Resposta",
     entidadeId: id,

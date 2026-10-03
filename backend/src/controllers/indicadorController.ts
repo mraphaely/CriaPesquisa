@@ -10,7 +10,7 @@ import { ordenarPorDependencia, CicloDetectado } from "../helper/dependencias.js
 import type { CriarIndicadorInput, AtualizarIndicadorInput } from "../helper/validators.js";
 import { indicadorCalculoModel } from "../models/indicadorCalculoModel.js";
 import { extrairFiltrosIndicador, chaveDeCache } from "../helper/filtrosIndicador.js";
-import { lerCache, gravarCache, invalidarCache } from "../helper/cacheIndicadores.js";
+import { lerCache, gravarCache, invalidarCache, geracaoAtual } from "../helper/cacheIndicadores.js";
 import { calcular, type IndicadorParaCalculo } from "../helper/motor/calcular.js";
 
 /** Valida a config contra o tipo e devolve de quais indicadores este depende. */
@@ -155,6 +155,7 @@ export async function calculo(req: Request, res: Response) {
   const emCache = lerCache<Record<string, unknown>>(chave);
   if (emCache) return res.json({ resultados: emCache, cache: true });
 
+  const geracao = geracaoAtual(); // antes de ler o banco: ver gravarCache
   const [indicadores, respostas, perguntas] = await Promise.all([
     indicadorModel.listarAtivos(),
     indicadorCalculoModel.carregarRespostas(filtros),
@@ -179,6 +180,6 @@ export async function calculo(req: Request, res: Response) {
     [...calculados.entries()].map(([id, resultado]) => [porCodigo.get(id) ?? id, resultado]),
   );
 
-  gravarCache(chave, resultados);
+  gravarCache(chave, resultados, geracao);
   res.json({ resultados, cache: false });
 }

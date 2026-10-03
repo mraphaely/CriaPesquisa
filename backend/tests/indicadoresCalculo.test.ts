@@ -80,6 +80,18 @@ describe("GET /api/indicadores/calculo", () => {
     expect(res.body.error.code).toBe("DEPENDENCIA_CIRCULAR");
   });
 
+  it("invalidação durante o cálculo: o resultado velho não vai para o cache", async () => {
+    vi.mocked(indicadorCalculoModel.carregarRespostas).mockImplementationOnce(async () => {
+      invalidarCache(); // uma resposta mudou enquanto o banco era lido
+      return [montarResposta("A", [{ perguntaId: "cras", opcoesSelecionadas: ["Sim"] }])];
+    });
+    const primeira = await request(app).get("/api/indicadores/calculo").set("Authorization", `Bearer ${token}`);
+    const segunda = await request(app).get("/api/indicadores/calculo").set("Authorization", `Bearer ${token}`);
+    expect(primeira.status).toBe(200);
+    expect(segunda.body.cache).toBe(false);
+    expect(indicadorCalculoModel.carregarRespostas).toHaveBeenCalledTimes(2);
+  });
+
   it("não guarda em cache o cálculo que falhou", async () => {
     vi.mocked(indicadorModel.listarAtivos).mockRejectedValueOnce(new Error("falha"));
     await request(app).get("/api/indicadores/calculo").set("Authorization", `Bearer ${token}`);
