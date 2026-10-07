@@ -193,6 +193,19 @@ salvar, propagação de dependência incompleta, indicador pareado com um dos la
 
 ## Pendências
 
+> **Atualização 2026-10-05:** o Emerson respondeu as 13 perguntas de
+> `docs/perguntas-indicadores-abertas.md`. Ficaram fechadas: faixas do TRIA (0/1/2), TRIA
+> Risco = leve + moderado/alto, insegurança alimentar derivada do TRIA, CPRE derivado do
+> início do pré-natal (100/50/0, "não soube" fora), "Não soube informar" na vacinação conta
+> como **não atualizada**, Índice de Atenção à Saúde = média simples, suplementação "Não se
+> aplica" sai do índice, dois IMCs da gestante (pré-gestacional e atual), IDTC e IDMCC são o
+> mesmo índice com o nome **IDTC (Tridimensional)**, e escopo = Cartão CRIA agora, outros
+> projetos depois. Ainda abertas, com o porquê no fim daquele arquivo: percentil **da própria
+> amostra** para desnutrição/obesidade (dá taxa constante por construção), **z-score** no
+> Índice Socioeconômico (precisa de amostra de referência e forma de exibição), **Atalah**
+> (falta pergunta de semana gestacional) e a tabela de consultas por idade do **CPUER**. A
+> lista abaixo é o retrato anterior às respostas.
+
 Enquanto não respondidas, os indicadores afetados ficam `DEFINICAO_INCOMPLETA`.
 
 **Sem resposta:**

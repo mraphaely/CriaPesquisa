@@ -98,6 +98,15 @@ describe("validarRespostaContraPerguntas", () => {
     expect(erros).toContain("Quando nasceu?: data inválida");
   });
 
+  it("mesma pergunta respondida duas vezes -> erro 'respondida mais de uma vez'", () => {
+    const itens: ItemParaValidacao[] = [
+      { perguntaId: "p-numero", valorNumero: 30 },
+      { perguntaId: "p-numero", valorNumero: 31 },
+    ];
+    const erros = validarRespostaContraPerguntas([perguntaNumero], itens);
+    expect(erros).toContain("Qual sua idade?: pergunta respondida mais de uma vez");
+  });
+
   it("pergunta opcional não respondida (sem item) -> sem erro", () => {
     const erros = validarRespostaContraPerguntas([perguntaNumero], []);
     expect(erros).toEqual([]);

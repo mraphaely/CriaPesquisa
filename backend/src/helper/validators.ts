@@ -147,3 +147,63 @@ export const atualizarPerguntaSchema = z
     }
   });
 export type AtualizarPerguntaInput = z.infer<typeof atualizarPerguntaSchema>;
+
+// ---------- Indicador ----------
+
+const indicadorBaseSchema = z.object({
+  codigo: z.string().min(1).max(60),
+  nome: z.string().min(1),
+  objetivo: z.string().optional(),
+  tipo: z.enum([
+    "PROPORCAO", "CRUZAMENTO", "MEDIA", "DERIVADA",
+    "COMPOSTO", "CLASSIFICACAO", "CONTAGEM", "DISTRIBUICAO",
+  ]),
+  unidade: z.string().optional(),
+  casasDecimais: z.number().int().min(0).max(4).default(1),
+  pesquisaId: z.string().uuid().optional(),
+  config: z.unknown(),
+  recorte: z.literal("ANTES_APOS").optional(),
+  recorteConfig: z
+    .object({ substituicoes: z.array(z.object({ de: z.string().min(1), para: z.string().min(1) })).min(1) })
+    .optional(),
+  meta: z.number().optional(),
+  formulaOriginal: z.string().optional(),
+  origemPlanilha: z.number().int().optional(),
+  // Sem status, o indicador nasce ATIVO (indicadorModel.criar): a API cadastra para calcular.
+  status: z.enum(["ATIVO", "DEFINICAO_INCOMPLETA", "INATIVO"]).optional(),
+  motivoIncompleto: z.string().optional(),
+});
+
+/**
+ * Regras entre campos, as mesmas na criação e na edição. Na edição valem sobre o
+ * corpo enviado: quem mexe no recorte manda `recorte` e `recorteConfig` juntos.
+ */
+function regrasDoIndicador(dados: Partial<z.infer<typeof indicadorBaseSchema>>, ctx: z.RefinementCtx) {
+  if (dados.status === "DEFINICAO_INCOMPLETA" && !dados.motivoIncompleto?.trim()) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["motivoIncompleto"],
+      message: "Definição incompleta exige o motivo.",
+    });
+  }
+  if (dados.recorte === "ANTES_APOS" && dados.recorteConfig === undefined) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["recorteConfig"],
+      message: "Recorte ANTES/APÓS exige recorteConfig.",
+    });
+  }
+  if (dados.recorteConfig !== undefined && dados.recorte !== "ANTES_APOS") {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["recorte"],
+      message: "recorteConfig só vale com recorte ANTES_APOS.",
+    });
+  }
+}
+
+export const criarIndicadorSchema = indicadorBaseSchema.superRefine(regrasDoIndicador);
+export type CriarIndicadorInput = z.infer<typeof criarIndicadorSchema>;
+
+export const atualizarIndicadorSchema = indicadorBaseSchema.partial().superRefine(regrasDoIndicador);
+export type AtualizarIndicadorInput = z.infer<typeof atualizarIndicadorSchema>;
