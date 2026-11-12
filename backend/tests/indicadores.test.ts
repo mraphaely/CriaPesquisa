@@ -239,6 +239,25 @@ describe("POST /api/indicadores", () => {
     expect(registrarLog).toHaveBeenCalledOnce();
   });
 
+  it("DEFINICAO_INCOMPLETA com config ainda vazia (cadastro pela tela) -> 201 sem dependências", async () => {
+    vi.mocked(indicadorModel.criar).mockResolvedValue({ id: "i1", ...CORPO_VALIDO } as never);
+    const res = await request(app)
+      .post("/api/indicadores")
+      .set("Authorization", `Bearer ${tokenGestor}`)
+      .send({ ...CORPO_VALIDO, config: { tipo: "PROPORCAO" }, status: "DEFINICAO_INCOMPLETA", motivoIncompleto: "configurar o cálculo" });
+    expect(res.status).toBe(201);
+    expect(indicadorModel.criar).toHaveBeenCalledWith(expect.anything(), "u1", []);
+  });
+
+  it("ATIVO com config vazia continua recusado -> 422", async () => {
+    const res = await request(app)
+      .post("/api/indicadores")
+      .set("Authorization", `Bearer ${tokenGestor}`)
+      .send({ ...CORPO_VALIDO, config: { tipo: "PROPORCAO" } });
+    expect(res.status).toBe(422);
+    expect(indicadorModel.criar).not.toHaveBeenCalled();
+  });
+
   it("status fora do enum -> 422", async () => {
     const res = await request(app)
       .post("/api/indicadores")

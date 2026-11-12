@@ -131,3 +131,23 @@ describe("Indicadores", () => {
     });
   });
 });
+
+describe("Indicadores: cadastro", () => {
+  it("tem botão para cadastrar um novo indicador", async () => {
+    renderTela();
+
+    expect(await screen.findByRole("button", { name: /novo indicador/i })).toBeInTheDocument();
+  });
+
+  it("sem nenhum indicador no sistema, explica que ainda não há cadastro", async () => {
+    getSpy.mockImplementation((async (url: string) => {
+      if (url === "/pesquisas") return { data: { itens: [] } };
+      return {
+        data: { total: 0, page: 1, pageSize: 50, itens: [], contadores: { DEFINICAO_INCOMPLETA: 0, ATIVO: 0, INATIVO: 0 } },
+      };
+    }) as never);
+    renderTela();
+
+    expect(await screen.findByText(/nenhum indicador cadastrado/i)).toBeInTheDocument();
+  });
+});

@@ -15,6 +15,7 @@ export interface ListarLogsFiltros {
   entidade?: string;
   entidadeId?: string;
   usuarioId?: string;
+  acao?: AcaoLog;
   de?: Date;
   ate?: Date;
   page?: number;
@@ -37,11 +38,12 @@ export const logModel = {
   },
 
   async listar(filtros: ListarLogsFiltros = {}) {
-    const { entidade, entidadeId, usuarioId, de, ate, page = 1, pageSize = 20 } = filtros;
+    const { entidade, entidadeId, usuarioId, acao, de, ate, page = 1, pageSize = 20 } = filtros;
     const where: Prisma.LogAlteracaoWhereInput = {};
     if (entidade) where.entidade = entidade;
     if (entidadeId) where.entidadeId = entidadeId;
     if (usuarioId) where.usuarioId = usuarioId;
+    if (acao) where.acao = acao;
     if (de || ate) {
       where.createdAt = {
         ...(de ? { gte: de } : {}),
@@ -56,6 +58,8 @@ export const logModel = {
         skip: (page - 1) * pageSize,
         take: pageSize,
         orderBy: { createdAt: "desc" },
+        // Nome e e-mail de quem agiu: a tela de auditoria mostra pessoas, não ids.
+        include: { usuario: { select: { nome: true, email: true } } },
       }),
     ]);
     return { total, itens };

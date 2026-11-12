@@ -12,6 +12,7 @@ import {
   publicar,
   encerrar,
   arquivar,
+  desarquivar,
   restaurar,
   listarVersoes,
 } from "../controllers/pesquisaController.js";
@@ -40,6 +41,7 @@ pesquisaRoutes.delete("/pesquisas/:id", autenticar, exigirPapel(...GESTOR_ADMIN)
 pesquisaRoutes.post("/pesquisas/:id/publicar", autenticar, exigirPapel(...GESTOR_ADMIN), publicar);
 pesquisaRoutes.post("/pesquisas/:id/encerrar", autenticar, exigirPapel(...GESTOR_ADMIN), encerrar);
 pesquisaRoutes.post("/pesquisas/:id/arquivar", autenticar, exigirPapel(...GESTOR_ADMIN), arquivar);
+pesquisaRoutes.post("/pesquisas/:id/desarquivar", autenticar, exigirPapel(...GESTOR_ADMIN), desarquivar);
 pesquisaRoutes.post("/pesquisas/:id/restaurar", autenticar, exigirPapel("ADMIN"), restaurar);
 pesquisaRoutes.get("/pesquisas/:id/versoes", autenticar, exigirPapel(...GESTOR_ADMIN), listarVersoes);
 

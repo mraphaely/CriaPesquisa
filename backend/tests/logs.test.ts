@@ -29,6 +29,23 @@ describe("logs", () => {
     expect(res.status).toBe(403);
   });
 
+  it("repassa os filtros de entidade, ação e usuário", async () => {
+    vi.mocked(logModel.listar).mockResolvedValue({ total: 0, itens: [] } as never);
+    const res = await request(app)
+      .get("/api/logs?entidade=Pesquisa&acao=ARQUIVAR&usuarioId=u9")
+      .set("Authorization", `Bearer ${tokenAdmin}`);
+    expect(res.status).toBe(200);
+    expect(logModel.listar).toHaveBeenCalledWith(
+      expect.objectContaining({ entidade: "Pesquisa", acao: "ARQUIVAR", usuarioId: "u9" }),
+    );
+  });
+
+  it("ação desconhecida -> ignorada", async () => {
+    vi.mocked(logModel.listar).mockResolvedValue({ total: 0, itens: [] } as never);
+    await request(app).get("/api/logs?acao=HACK").set("Authorization", `Bearer ${tokenAdmin}`);
+    expect(logModel.listar).toHaveBeenCalledWith(expect.objectContaining({ acao: undefined }));
+  });
+
   it("sem token -> 401", async () => {
     const res = await request(app).get("/api/logs");
     expect(res.status).toBe(401);

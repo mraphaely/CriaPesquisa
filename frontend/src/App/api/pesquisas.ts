@@ -124,7 +124,7 @@ export function useSalvarEdicao(id: string | undefined) {
   });
 }
 
-export type AcaoStatus = "publicar" | "encerrar" | "arquivar";
+export type AcaoStatus = "publicar" | "encerrar" | "arquivar" | "desarquivar";
 
 export function useMudarStatusPesquisa() {
   const qc = useQueryClient();

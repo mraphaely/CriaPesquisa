@@ -1,7 +1,7 @@
 import { useState, type MouseEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import styled from "styled-components";
-import { MoreVertical, Pencil, Upload, Ban, Archive, Trash2 } from "lucide-react";
+import { MoreVertical, Pencil, Upload, Ban, Archive, ArchiveRestore, Trash2 } from "lucide-react";
 import { useMudarStatusPesquisa, useRemoverPesquisa } from "../App/api/pesquisas.js";
 
 export type AcoesPesquisaAlvo = { id: string; titulo: string; status: string };
@@ -67,7 +67,7 @@ const Overlay = styled.div`
   z-index: 20;
 `;
 
-// Menu de ações da pesquisa (Editar / Publicar / Encerrar / Arquivar / Excluir).
+// Menu de ações da pesquisa (Editar / Publicar / Encerrar / Arquivar / Desarquivar / Excluir).
 // Já assume que quem renderiza tem permissão (admin/gestor).
 export function AcoesPesquisa({ p, aoExcluir }: { p: AcoesPesquisaAlvo; aoExcluir?: () => void }) {
   const navigate = useNavigate();
@@ -115,6 +115,12 @@ export function AcoesPesquisa({ p, aoExcluir }: { p: AcoesPesquisaAlvo; aoExclui
           {p.status !== "ARQUIVADA" && (
             <MenuItem role="menuitem" onClick={acao(() => mudar.mutate({ id: p.id, acao: "arquivar" }))}>
               <Archive size={15} /> Arquivar
+            </MenuItem>
+          )}
+          {p.status === "ARQUIVADA" && (
+            // Volta ao status de antes do arquivamento (a API decide qual, pela auditoria).
+            <MenuItem role="menuitem" onClick={acao(() => mudar.mutate({ id: p.id, acao: "desarquivar" }))}>
+              <ArchiveRestore size={15} /> Desarquivar
             </MenuItem>
           )}
           <MenuItem

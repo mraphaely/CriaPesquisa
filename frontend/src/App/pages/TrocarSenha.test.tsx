@@ -96,3 +96,28 @@ describe("TrocarSenha", () => {
     expect(await screen.findByText("A senha atual não confere.")).toBeInTheDocument();
   });
 });
+
+describe("TrocarSenha por escolha própria (senha já definitiva)", () => {
+  beforeEach(() => {
+    localStorage.setItem(
+      "usuario",
+      JSON.stringify({ id: "1", nome: "Ana", email: "ana@exemplo.local", papel: "COLETADOR", precisaTrocarSenha: false }),
+    );
+  });
+
+  it("oferece voltar ao sistema sem sair", () => {
+    renderTela();
+
+    expect(screen.getByRole("button", { name: /voltar ao sistema/i })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /^sair$/i })).not.toBeInTheDocument();
+  });
+});
+
+describe("TrocarSenha com senha provisória", () => {
+  it("não oferece voltar: a troca é obrigatória", () => {
+    renderTela();
+
+    expect(screen.queryByRole("button", { name: /voltar ao sistema/i })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /sair/i })).toBeInTheDocument();
+  });
+});

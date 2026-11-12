@@ -73,7 +73,7 @@ npm run dev                 # http://localhost:5173
 | Variável | Descrição |
 |---|---|
 | `VITE_API_URL` | URL base da API (ex.: `http://localhost:3333/api`) |
-| `VITE_EMAIL_DOMINIO` | Domínio usado ao montar e-mails na criação de usuários |
+| `VITE_EMAIL_DOMINIO` | Domínio sugerido no e-mail ao criar usuários (o campo aceita qualquer domínio) |
 | `VITE_SENHA_PADRAO` | Pré-preenche a senha no formulário de novo usuário (deixe vazio em produção) |
 
 ## Scripts
