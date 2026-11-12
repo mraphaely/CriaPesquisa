@@ -137,3 +137,42 @@ describe("GET /api/pesquisas/:id", () => {
     expect(res.status).toBe(404);
   });
 });
+
+describe("POST /api/pesquisas/:id/desarquivar", () => {
+  it("10) volta ao status de antes do arquivamento e registra DESARQUIVAR", async () => {
+    vi.mocked(pesquisaModel.obterPorId).mockResolvedValue({ id: "p1", status: "ARQUIVADA" } as never);
+    vi.mocked(pesquisaModel.statusAntesDeArquivar).mockResolvedValue("PUBLICADA");
+    vi.mocked(pesquisaModel.mudarStatus).mockResolvedValue({ id: "p1", status: "PUBLICADA" } as never);
+
+    const res = await request(app).post("/api/pesquisas/p1/desarquivar").set("Authorization", `Bearer ${tokenGestor}`);
+
+    expect(res.status).toBe(200);
+    expect(pesquisaModel.mudarStatus).toHaveBeenCalledWith("p1", "PUBLICADA");
+    expect(registrarLog).toHaveBeenCalledWith(expect.objectContaining({ acao: "DESARQUIVAR", entidadeId: "p1" }));
+  });
+
+  it("11) sem registro do arquivamento -> volta como ENCERRADA", async () => {
+    vi.mocked(pesquisaModel.obterPorId).mockResolvedValue({ id: "p1", status: "ARQUIVADA" } as never);
+    vi.mocked(pesquisaModel.statusAntesDeArquivar).mockResolvedValue(null);
+    vi.mocked(pesquisaModel.mudarStatus).mockResolvedValue({ id: "p1", status: "ENCERRADA" } as never);
+
+    const res = await request(app).post("/api/pesquisas/p1/desarquivar").set("Authorization", `Bearer ${tokenGestor}`);
+
+    expect(res.status).toBe(200);
+    expect(pesquisaModel.mudarStatus).toHaveBeenCalledWith("p1", "ENCERRADA");
+  });
+
+  it("12) pesquisa que não está arquivada -> 409", async () => {
+    vi.mocked(pesquisaModel.obterPorId).mockResolvedValue({ id: "p1", status: "PUBLICADA" } as never);
+
+    const res = await request(app).post("/api/pesquisas/p1/desarquivar").set("Authorization", `Bearer ${tokenGestor}`);
+
+    expect(res.status).toBe(409);
+    expect(pesquisaModel.mudarStatus).not.toHaveBeenCalled();
+  });
+
+  it("13) COLETADOR -> 403", async () => {
+    const res = await request(app).post("/api/pesquisas/p1/desarquivar").set("Authorization", `Bearer ${tokenColetador}`);
+    expect(res.status).toBe(403);
+  });
+});

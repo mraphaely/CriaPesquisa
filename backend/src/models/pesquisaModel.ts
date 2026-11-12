@@ -86,6 +86,18 @@ export const pesquisaModel = {
     });
   },
 
+  /** Status que a pesquisa tinha no último arquivamento (lido da trilha de auditoria); null sem registro. */
+  async statusAntesDeArquivar(id: string): Promise<StatusPesquisa | null> {
+    const log = await prisma.logAlteracao.findFirst({
+      where: { entidade: "Pesquisa", entidadeId: id, acao: "ARQUIVAR" },
+      orderBy: { createdAt: "desc" },
+      select: { dadosAntes: true },
+    });
+    const status = (log?.dadosAntes as { status?: unknown } | null)?.status;
+    const validos: StatusPesquisa[] = ["RASCUNHO", "PUBLICADA", "ENCERRADA"];
+    return validos.includes(status as StatusPesquisa) ? (status as StatusPesquisa) : null;
+  },
+
   restaurar(id: string) {
     return prisma.pesquisa.update({
       where: { id },

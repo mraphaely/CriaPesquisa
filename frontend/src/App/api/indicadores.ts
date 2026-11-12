@@ -71,6 +71,38 @@ export function useIndicador(id: string | undefined) {
   });
 }
 
+export interface NovoIndicadorDados {
+  codigo: string;
+  nome: string;
+  tipo: string;
+  objetivo?: string;
+  pesquisaId?: string;
+  apresentacao: string[];
+  categoria?: string;
+}
+
+/**
+ * Cria o indicador "para revisar", com a config ainda vazia: a configuração do
+ * cálculo e a ativação acontecem na tela de revisão, a mesma dos importados.
+ */
+export function useCriarIndicador() {
+  const qc = useQueryClient();
+  return useMutation<Indicador, AxiosError, NovoIndicadorDados>({
+    mutationFn: async (dados) => {
+      const { data } = await api.post<{ indicador: Indicador }>("/indicadores", {
+        ...dados,
+        config: { tipo: dados.tipo },
+        status: "DEFINICAO_INCOMPLETA",
+        motivoIncompleto: "Cadastrado pela tela: falta configurar o cálculo.",
+      });
+      return data.indicador;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["indicadores"] });
+    },
+  });
+}
+
 export function useSalvarIndicador(id: string) {
   const qc = useQueryClient();
   return useMutation<Indicador, AxiosError, Partial<Indicador>>({

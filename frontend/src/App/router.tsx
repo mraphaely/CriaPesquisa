@@ -22,6 +22,7 @@ const NovaPesquisa = lazy(() => import("./pages/NovaPesquisa.js").then((m) => ({
 const Usuarios = lazy(() => import("./pages/Usuarios.js").then((m) => ({ default: m.Usuarios })));
 const NovoUsuario = lazy(() => import("./pages/NovoUsuario.js").then((m) => ({ default: m.NovoUsuario })));
 const Indicadores = lazy(() => import("./pages/Indicadores.js").then((m) => ({ default: m.Indicadores })));
+const NovoIndicador = lazy(() => import("./pages/NovoIndicador.js").then((m) => ({ default: m.NovoIndicador })));
 const RevisaoIndicador = lazy(() =>
   import("./pages/RevisaoIndicador.js").then((m) => ({ default: m.RevisaoIndicador })),
 );
@@ -61,6 +62,7 @@ export const router = createBrowserRouter([
           { path: "/pesquisas/nova", element: <NovaPesquisa /> },
           { path: "/pesquisas/:id/editar", element: <NovaPesquisa /> },
           { path: "/indicadores", element: <Indicadores /> },
+          { path: "/indicadores/novo", element: <NovoIndicador /> },
           { path: "/indicadores/:id", element: <RevisaoIndicador /> },
         ],
       },

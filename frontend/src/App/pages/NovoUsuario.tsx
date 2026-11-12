@@ -22,8 +22,9 @@ import {
 // Vem de VITE_SENHA_PADRAO: nunca fixe credencial no código — ela iria para o
 // bundle publicado e para o repositório. Sem a variável, o campo começa vazio.
 const SENHA_PADRAO = import.meta.env.VITE_SENHA_PADRAO ?? "";
-// Domínio usado para montar o e-mail institucional. Vem de VITE_EMAIL_DOMINIO
-// para não fixar o domínio real no repositório.
+// Domínio usado para sugerir o e-mail institucional. Vem de VITE_EMAIL_DOMINIO
+// para não fixar o domínio real no repositório. É só sugestão: o campo aceita
+// e-mail de qualquer domínio (equipes de outros órgãos também usam o sistema).
 const DOMINIO = import.meta.env.VITE_EMAIL_DOMINIO ?? "@exemplo.local";
 
 const PAPEIS: { v: Papel; l: string }[] = [
@@ -50,29 +51,6 @@ const Linha2 = styled.div`
   grid-template-columns: 1fr 1fr;
   gap: 14px;
   @media (max-width: 560px) { grid-template-columns: 1fr; }
-`;
-
-const EmailGrupo = styled.div`
-  display: flex;
-  align-items: stretch;
-  input {
-    border-top-right-radius: 0;
-    border-bottom-right-radius: 0;
-    min-width: 0;
-  }
-`;
-
-const Sufixo = styled.span`
-  display: inline-flex;
-  align-items: center;
-  padding: 0 12px;
-  border: 1px solid ${(p) => p.theme.cores.border};
-  border-left: none;
-  border-radius: 0 10px 10px 0;
-  background: ${(p) => p.theme.cores.surfaceAlt};
-  color: ${(p) => p.theme.cores.textMuted};
-  font-size: 13px;
-  white-space: nowrap;
 `;
 
 const Acoes = styled.div`
@@ -118,8 +96,7 @@ export function NovoUsuario() {
   const isPending = editando ? atualizar.isPending : criar.isPending;
 
   const [nome, setNome] = useState("");
-  const [emailLocal, setEmailLocal] = useState(""); // parte antes do @ (criação)
-  const [email, setEmail] = useState(""); // e-mail completo (edição)
+  const [email, setEmail] = useState("");
   const [emailTocado, setEmailTocado] = useState(false);
   const [senha, setSenha] = useState(editando ? "" : SENHA_PADRAO);
   const [papel, setPapel] = useState<Papel>("COLETADOR");
@@ -129,7 +106,8 @@ export function NovoUsuario() {
   // Ao criar, gera o e-mail a partir do nome (até o admin editar manualmente).
   useEffect(() => {
     if (editando || emailTocado) return;
-    setEmailLocal(localDeNome(nome));
+    const local = localDeNome(nome);
+    setEmail(local ? `${local}${DOMINIO}` : "");
   }, [nome, editando, emailTocado]);
 
   // Ao editar, carrega os dados uma vez.
@@ -146,10 +124,9 @@ export function NovoUsuario() {
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
     setErro("");
-    const emailFinal = editando ? email.trim() : `${emailLocal.trim()}${DOMINIO}`;
+    const emailFinal = email.trim().toLowerCase();
 
     if (!nome.trim()) return setErro("Informe o nome.");
-    if (!editando && !emailLocal.trim()) return setErro("Informe a parte do e-mail antes do @.");
     if (!/^\S+@\S+\.\S+$/.test(emailFinal)) return setErro("Informe um e-mail válido.");
     if (!editando && senha.length < 6) return setErro("A senha deve ter ao menos 6 caracteres.");
     if (editando && senha.length > 0 && senha.length < 6) return setErro("A nova senha deve ter ao menos 6 caracteres.");
@@ -207,27 +184,17 @@ export function NovoUsuario() {
         </Field>
         <Field>
           <Label htmlFor="email">E-mail *</Label>
-          {editando ? (
-            <TextInput
-              id="email"
-              type="email"
-              value={email}
-              onChange={(e) => { setEmail(e.target.value); setEmailTocado(true); }}
-              placeholder={`nome.sobrenome${DOMINIO}`}
-            />
-          ) : (
-            <>
-              <EmailGrupo>
-                <TextInput
-                  id="email"
-                  value={emailLocal}
-                  onChange={(e) => { setEmailLocal(e.target.value.trim().toLowerCase()); setEmailTocado(true); }}
-                  placeholder="nome.sobrenome"
-                />
-                <Sufixo>{DOMINIO}</Sufixo>
-              </EmailGrupo>
-              <Muted style={{ fontSize: 11, marginTop: 4 }}>Gerado a partir do nome — ajuste se precisar.</Muted>
-            </>
+          <TextInput
+            id="email"
+            type="email"
+            value={email}
+            onChange={(e) => { setEmail(e.target.value.trim()); setEmailTocado(true); }}
+            placeholder={`nome.sobrenome${DOMINIO}`}
+          />
+          {!editando && (
+            <Muted style={{ fontSize: 11, marginTop: 4 }}>
+              Sugerido a partir do nome. Pode ser de qualquer domínio — ajuste se precisar.
+            </Muted>
           )}
         </Field>
         <Linha2>

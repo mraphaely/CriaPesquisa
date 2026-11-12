@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import styled from "styled-components";
-import { KeyRound, LogOut } from "lucide-react";
+import { ArrowLeft, KeyRound, LogOut } from "lucide-react";
 import { useTrocarSenha } from "../api/useTrocarSenha.js";
 import { useAuth } from "../auth/useAuth.js";
 import { Logo } from "../../Components/ui/Logo.js";
@@ -70,6 +70,9 @@ export function TrocarSenha() {
   const [ok, setOk] = useState(false);
 
   const provisoria = Boolean(usuario?.precisaTrocarSenha);
+
+  // Sem página anterior no histórico (link aberto direto), volta para o início.
+  const voltar = () => ((window.history.state?.idx ?? 0) > 0 ? navigate(-1) : navigate("/"));
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
@@ -170,9 +173,17 @@ export function TrocarSenha() {
         </form>
 
         <LinhaSair>
-          <BotaoTexto type="button" onClick={() => sair()}>
-            <LogOut size={14} /> Sair
-          </BotaoTexto>
+          {provisoria ? (
+            // Senha provisória: a troca é obrigatória, então a única saída é deslogar.
+            <BotaoTexto type="button" onClick={() => sair()}>
+              <LogOut size={14} /> Sair
+            </BotaoTexto>
+          ) : (
+            // Troca por escolha própria: desistir volta para onde a pessoa estava, ainda logada.
+            <BotaoTexto type="button" onClick={voltar}>
+              <ArrowLeft size={14} /> Voltar ao sistema
+            </BotaoTexto>
+          )}
         </LinhaSair>
       </Cartao>
     </Page>

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import styled from "styled-components";
-import { Gauge } from "lucide-react";
+import { Gauge, Plus } from "lucide-react";
 import { useIndicadores, type StatusIndicador, type FiltrosIndicadores } from "../api/indicadores.js";
 import { usePesquisas } from "../api/pesquisas.js";
 import {
@@ -100,6 +100,9 @@ export function Indicadores() {
 
   const { data, isLoading, isError } = useIndicadores(filtros, pagina);
   const { data: pesquisas } = usePesquisas();
+  // Lista vazia por filtro ≠ sistema sem nenhum indicador: os contadores ignoram o filtro de status.
+  const semNenhumCadastro =
+    data !== undefined && data.contadores.DEFINICAO_INCOMPLETA + data.contadores.ATIVO + data.contadores.INATIVO === 0;
 
   const cabecalho = (
     <PageHeader>
@@ -108,9 +111,13 @@ export function Indicadores() {
         <PageSubtitle>
           {data
             ? `${data.contadores.DEFINICAO_INCOMPLETA} para revisar · ${data.contadores.ATIVO} ativos · ${data.contadores.INATIVO} inativos`
-            : "Revise e ative os indicadores importados"}
+            : "Cadastre, revise e ative os indicadores"}
         </PageSubtitle>
       </div>
+      <Button type="button" onClick={() => navigate("/indicadores/novo")}>
+        <Plus size={16} />
+        Novo indicador
+      </Button>
     </PageHeader>
   );
 
@@ -182,8 +189,19 @@ export function Indicadores() {
           <EmptyIcon>
             <Gauge size={26} />
           </EmptyIcon>
-          <SectionTitle>Nenhum indicador encontrado</SectionTitle>
-          <Muted>Ajuste os filtros para ver outros indicadores.</Muted>
+          {semNenhumCadastro ? (
+            <>
+              <SectionTitle>Nenhum indicador cadastrado</SectionTitle>
+              <Muted>
+                Cadastre um indicador em "Novo indicador" ou importe a planilha de indicadores (ver README, Deploy).
+              </Muted>
+            </>
+          ) : (
+            <>
+              <SectionTitle>Nenhum indicador encontrado</SectionTitle>
+              <Muted>Ajuste os filtros para ver outros indicadores.</Muted>
+            </>
+          )}
         </EmptyState>
       ) : (
         <Card>

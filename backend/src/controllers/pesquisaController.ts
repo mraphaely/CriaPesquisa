@@ -168,6 +168,36 @@ export async function arquivar(req: Request, res: Response) {
   res.json({ pesquisa });
 }
 
+/**
+ * Desfaz o arquivamento: a pesquisa volta ao status que tinha antes de arquivar
+ * (lido da trilha de auditoria). Sem esse registro, volta como ENCERRADA — o
+ * caminho mais seguro, porque não reabre a coleta sem o PO decidir.
+ */
+export async function desarquivar(req: Request, res: Response) {
+  const usuario = req.usuario!;
+  const { id } = req.params;
+
+  const atual = await pesquisaModel.obterPorId(id);
+  if (!atual) throw new HttpError(404, "NAO_ENCONTRADA", "Pesquisa não encontrada");
+  if (atual.status !== "ARQUIVADA") {
+    throw new HttpError(409, "STATUS_INVALIDO", "pesquisa não está arquivada");
+  }
+
+  const destino = (await pesquisaModel.statusAntesDeArquivar(id)) ?? "ENCERRADA";
+  const pesquisa = await pesquisaModel.mudarStatus(id, destino);
+  await registrarLog({
+    entidade: "Pesquisa",
+    entidadeId: id,
+    acao: "DESARQUIVAR",
+    usuarioId: usuario.id,
+    dadosAntes: atual,
+    dadosDepois: pesquisa,
+    ip: req.ip,
+  });
+
+  res.json({ pesquisa });
+}
+
 export async function restaurar(req: Request, res: Response) {
   const usuario = req.usuario!;
   const { id } = req.params;

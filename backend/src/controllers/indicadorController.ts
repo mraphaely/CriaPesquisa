@@ -141,11 +141,29 @@ export async function criar(req: Request, res: Response) {
   const usuario = req.usuario!;
   const dados = req.body as CriarIndicadorInput;
 
-  const dependencias = conferirConfig(dados.tipo, dados.config);
-  await conferirReferencias(dependencias, dados.pesquisaId);
-  await conferirPerguntas(dados.tipo, dados.config, dados.recorteConfig);
-  if ((dados.status ?? "ATIVO") === "ATIVO") conferirRecorteCompativel(dados.tipo, dados.config, dados.recorteConfig);
-  await conferirCiclo("__novo__", dependencias);
+  let dependencias: string[];
+  if ((dados.status ?? "ATIVO") === "ATIVO") {
+    dependencias = conferirConfig(dados.tipo, dados.config);
+    await conferirReferencias(dependencias, dados.pesquisaId);
+    await conferirPerguntas(dados.tipo, dados.config, dados.recorteConfig);
+    conferirRecorteCompativel(dados.tipo, dados.config, dados.recorteConfig);
+    await conferirCiclo("__novo__", dependencias);
+  } else {
+    // Cadastro pela tela nasce "para revisar" com a config ainda vazia: como na edição,
+    // config que não valida é gravada sem dependências e a revisão completa depois.
+    let valida: string[] | null = null;
+    try {
+      valida = conferirConfig(dados.tipo, dados.config);
+    } catch (erro) {
+      if (!(erro instanceof z.ZodError)) throw erro;
+    }
+    dependencias = valida ?? [];
+    await conferirReferencias(dependencias, dados.pesquisaId);
+    if (valida) {
+      await conferirPerguntas(dados.tipo, dados.config, dados.recorteConfig);
+      await conferirCiclo("__novo__", dependencias);
+    }
+  }
 
   const indicador = await indicadorModel.criar(dados, usuario.id, dependencias).catch(traduzirErroDeGravacao);
   // Logo após gravar: se a auditoria falhar, o cache já não serve número velho.
