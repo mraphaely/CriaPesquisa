@@ -33,7 +33,7 @@ const statusSchema = z.enum(["ATIVO", "DEFINICAO_INCOMPLETA", "INATIVO"]);
 
 const filtrosListagem = z.object({
   status: statusSchema.optional(),
-  pesquisaId: z.string().uuid().optional(),
+  pesquisaId: z.guid().optional(),
   apresentacao: z.enum(["Escopo", "Perfil"]).optional(),
   q: z.string().trim().min(1).max(100).optional(),
 });

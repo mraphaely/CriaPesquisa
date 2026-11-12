@@ -12,7 +12,7 @@ export type LoginInput = z.infer<typeof loginSchema>;
 export const criarPesquisaSchema = z.object({
   titulo: z.string().min(1),
   descricao: z.string().optional(),
-  responsavelId: z.string().uuid(),
+  responsavelId: z.guid(),
   periodoInicio: z.coerce.date().optional(),
   periodoFim: z.coerce.date().optional(),
 });
@@ -35,7 +35,7 @@ export const perguntaSchema = z
     tipo: z.enum(["TEXTO", "NUMERO", "DATA", "MULTIPLA_ESCOLHA", "ESCOLHA_UNICA", "CAMPO_ABERTO"]),
     obrigatoria: z.boolean().default(false),
     ordem: z.number().int().min(0),
-    secaoId: z.string().uuid().optional(),
+    secaoId: z.guid().optional(),
     ajuda: z.string().optional(),
     opcoes: z.array(opcaoSchema).optional(),
   })
@@ -61,14 +61,14 @@ export const secaoSchema = z.object({
 export type SecaoInput = z.infer<typeof secaoSchema>;
 
 export const reordenarSchema = z.object({
-  ordem: z.array(z.string().uuid()).min(1),
+  ordem: z.array(z.guid()).min(1),
 });
 export type ReordenarInput = z.infer<typeof reordenarSchema>;
 
 // ---------- Resposta ----------
 
 export const itemRespostaSchema = z.object({
-  perguntaId: z.string().uuid(),
+  perguntaId: z.guid(),
   valorTexto: z.string().optional(),
   valorNumero: z.number().optional(),
   valorData: z.coerce.date().optional(),
@@ -131,7 +131,7 @@ export const atualizarPerguntaSchema = z
     tipo: z.enum(["TEXTO", "NUMERO", "DATA", "MULTIPLA_ESCOLHA", "ESCOLHA_UNICA", "CAMPO_ABERTO"]).optional(),
     obrigatoria: z.boolean().optional(),
     ordem: z.number().int().min(0).optional(),
-    secaoId: z.string().uuid().optional(),
+    secaoId: z.guid().optional(),
     ajuda: z.string().optional(),
     opcoes: z.array(opcaoSchema).optional(),
   })
@@ -161,7 +161,7 @@ const indicadorBaseSchema = z.object({
   ]),
   unidade: z.string().optional(),
   casasDecimais: z.number().int().min(0).max(4).default(1),
-  pesquisaId: z.string().uuid().optional(),
+  pesquisaId: z.guid().optional(),
   config: z.unknown(),
   recorte: z.literal("ANTES_APOS").optional(),
   recorteConfig: z
@@ -222,6 +222,9 @@ export const atualizarIndicadorSchema = indicadorBaseSchema
     recorte: indicadorBaseSchema.shape.recorte.unwrap().nullable(),
     recorteConfig: indicadorBaseSchema.shape.recorteConfig.unwrap().nullable(),
     meta: z.number().nullable(),
+    // Sem o default da criação: no zod 4 o default vale mesmo dentro do .partial(),
+    // e a edição de outro campo gravaria casasDecimais = 1 por cima do valor salvo.
+    casasDecimais: z.number().int().min(0).max(4),
   })
   .partial();
 export type AtualizarIndicadorInput = z.infer<typeof atualizarIndicadorSchema>;

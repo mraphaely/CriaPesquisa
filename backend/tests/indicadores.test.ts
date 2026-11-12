@@ -298,6 +298,23 @@ describe("POST /api/indicadores", () => {
 });
 
 describe("PUT /api/indicadores/:id", () => {
+  it("edição parcial não preenche campo ausente com o valor padrão (casasDecimais)", async () => {
+    vi.mocked(indicadorModel.obterPorId).mockResolvedValue({
+      id: "i1", tipo: "PROPORCAO", status: "DEFINICAO_INCOMPLETA", motivoIncompleto: "x", config: {}, casasDecimais: 2,
+      recorte: null, recorteConfig: null,
+    } as never);
+    vi.mocked(indicadorModel.atualizar).mockResolvedValue({ id: "i1" } as never);
+
+    const res = await request(app)
+      .put("/api/indicadores/i1")
+      .set("Authorization", `Bearer ${tokenGestor}`)
+      .send({ nome: "Novo nome" });
+
+    expect(res.status).toBe(200);
+    const corpo = vi.mocked(indicadorModel.atualizar).mock.calls[0][1];
+    expect(corpo).not.toHaveProperty("casasDecimais");
+  });
+
   it("recusa dependência circular -> 409 com o ciclo no corpo", async () => {
     // O IDTC já depende do MCC. Editar o MCC para depender do IDTC fecha o ciclo.
     vi.mocked(indicadorModel.obterPorId).mockResolvedValue({ id: "mcc", tipo: "COMPOSTO", config: {} } as never);
