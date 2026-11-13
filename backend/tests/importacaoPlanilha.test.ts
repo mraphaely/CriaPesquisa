@@ -88,3 +88,31 @@ describe("lerPlanilha", () => {
     await expect(lerPlanilha(caminho)).rejects.toBeInstanceOf(ErroImportacao);
   });
 });
+
+describe("lerPlanilha: proteção contra arquivo malicioso", () => {
+  /** Gera um .xlsx válido e troca o tamanho descompactado declarado da 1ª entrada do zip. */
+  async function xlsxComTamanhoDeclarado(bytes: number): Promise<Buffer> {
+    const workbook = new ExcelJS.Workbook();
+    workbook.addWorksheet("Indicadores").addRow([...COLUNAS]);
+    const buf = Buffer.from(await workbook.xlsx.writeBuffer());
+    const central = buf.indexOf(Buffer.from([0x50, 0x4b, 0x01, 0x02]));
+    buf.writeUInt32LE(bytes, central + 24);
+    return buf;
+  }
+
+  it("recusa zip que descompacta para tamanho absurdo (bomba de compressão)", async () => {
+    const erro = await lerPlanilha(await xlsxComTamanhoDeclarado(0xfffffff0)).catch((e) => e);
+    expect(erro).toBeInstanceOf(ErroImportacao);
+    expect(erro.message).toMatch(/grande demais/);
+  });
+
+  it("recusa planilha com linhas demais", async () => {
+    const workbook = new ExcelJS.Workbook();
+    const sheet = workbook.addWorksheet("Indicadores");
+    sheet.addRow([...COLUNAS]);
+    sheet.getRow(20_002).getCell(1).value = "x";
+    const erro = await lerPlanilha(Buffer.from(await workbook.xlsx.writeBuffer())).catch((e) => e);
+    expect(erro).toBeInstanceOf(ErroImportacao);
+    expect(erro.message).toMatch(/linhas demais/);
+  });
+});
