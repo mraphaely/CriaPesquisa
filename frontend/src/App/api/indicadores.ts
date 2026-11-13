@@ -103,6 +103,30 @@ export function useCriarIndicador() {
   });
 }
 
+export interface ResultadoImportacao {
+  resumo: { lidas: number; importadas: number; jaExistiam: number };
+  ativacao: { ativados: string[]; recusados: Array<{ codigo: string; motivo: string }> };
+  texto: string;
+}
+
+/** Envia a planilha "Exportação Indicadores" (.xlsx) como corpo cru; a API importa e ativa os prontos. */
+export function useImportarPlanilha() {
+  const qc = useQueryClient();
+  return useMutation<ResultadoImportacao, AxiosError, File>({
+    mutationFn: async (arquivo) => {
+      const { data } = await api.post<ResultadoImportacao>("/indicadores/importar", arquivo, {
+        headers: { "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" },
+      });
+      return data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["indicadores"] });
+      qc.invalidateQueries({ queryKey: ["indicadores-ativos"] });
+      qc.invalidateQueries({ queryKey: ["indicadores-calculo-painel"] });
+    },
+  });
+}
+
 export function useSalvarIndicador(id: string) {
   const qc = useQueryClient();
   return useMutation<Indicador, AxiosError, Partial<Indicador>>({

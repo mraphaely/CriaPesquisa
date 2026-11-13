@@ -151,3 +151,49 @@ describe("Indicadores: cadastro", () => {
     expect(await screen.findByText(/nenhum indicador cadastrado/i)).toBeInTheDocument();
   });
 });
+
+describe("Indicadores: importar planilha", () => {
+  const postSpy = vi.spyOn(api, "post");
+
+  beforeEach(() => {
+    postSpy.mockReset();
+  });
+
+  it("envia o .xlsx escolhido e mostra o resultado", async () => {
+    postSpy.mockResolvedValue({
+      data: {
+        resumo: { lidas: 110, importadas: 120, jaExistiam: 0 },
+        ativacao: { ativados: Array.from({ length: 34 }, (_, i) => `C${i}`), recusados: [] },
+        texto: "110 lidas",
+      },
+    } as never);
+    renderTela();
+    await screen.findByText(/5 para revisar/);
+
+    const arquivo = new File(["PK"], "Exportação Indicadores.xlsx", {
+      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    });
+    await userEvent.upload(screen.getByLabelText(/arquivo da planilha/i), arquivo);
+
+    expect(postSpy).toHaveBeenCalledWith(
+      "/indicadores/importar",
+      arquivo,
+      expect.objectContaining({ headers: expect.objectContaining({ "Content-Type": expect.stringContaining("spreadsheetml") }) }),
+    );
+    const aviso = await screen.findByRole("status");
+    expect(aviso).toHaveTextContent(/120 indicador/);
+    expect(aviso).toHaveTextContent(/34 ativado/);
+  });
+
+  it("mostra o motivo quando a planilha é recusada", async () => {
+    postSpy.mockRejectedValue({
+      response: { status: 422, data: { error: { code: "PLANILHA_INVALIDA", message: "cabeçalho da planilha mudou: coluna 3" } } },
+    });
+    renderTela();
+    await screen.findByText(/5 para revisar/);
+
+    await userEvent.upload(screen.getByLabelText(/arquivo da planilha/i), new File(["x"], "outra.xlsx"));
+
+    expect(await screen.findByText(/cabeçalho da planilha mudou: coluna 3/)).toBeInTheDocument();
+  });
+});

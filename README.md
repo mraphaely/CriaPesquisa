@@ -228,7 +228,16 @@ real de quem chama.
    antigo é `pergunta criada: <id>`. **Saída vazia significa que o script não rodou**: pare e
    reporte.
 
-7. **Importar os indicadores da planilha** (uma vez):
+7. **Importar os indicadores da planilha** (uma vez).
+
+   **Pela tela (mais simples):** com o sistema no ar, um Administrador ou Gestor abre
+   **Indicadores** (menu Administração) → **Importar planilha** e escolhe o `.xlsx`. A tela faz
+   este passo e o 8 de uma vez, sem reiniciar a API, e mostra o resultado. O arquivo é lido só em
+   memória (não fica no servidor) e as colunas DtRegistro e Usuario não são lidas, então a
+   planilha original pode ser enviada como está. Reenviar é seguro: o que já existe não é tocado.
+   Feito por aqui, pule os passos 8 e 9.
+
+   **Pelo terminal:**
    1. A coordenação entrega a planilha "Exportação Indicadores" em `.xlsx`, por canal privado,
       com o conteúdo das colunas "DtRegistro" e "Usuario" apagado (os títulos ficam — o
       importador confere o cabeçalho). Copie para a VM em `/tmp/indicadores.xlsx`.

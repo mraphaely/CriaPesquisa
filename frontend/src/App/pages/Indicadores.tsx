@@ -1,8 +1,14 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import styled from "styled-components";
-import { Gauge, Plus } from "lucide-react";
-import { useIndicadores, type StatusIndicador, type FiltrosIndicadores } from "../api/indicadores.js";
+import { Gauge, Plus, Upload } from "lucide-react";
+import {
+  useIndicadores,
+  useImportarPlanilha,
+  type StatusIndicador,
+  type FiltrosIndicadores,
+  type ResultadoImportacao,
+} from "../api/indicadores.js";
 import { usePesquisas } from "../api/pesquisas.js";
 import {
   PageHeader,
@@ -69,6 +75,47 @@ const Chips = styled.div`
   flex-wrap: wrap;
 `;
 
+const BotoesTopo = styled.div`
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+`;
+
+const ListaRecusados = styled.ul`
+  margin: 8px 0 0;
+  padding-left: 18px;
+  font-size: 12px;
+`;
+
+const plural = (n: number, um: string, varios: string) => `${n} ${n === 1 ? um : varios}`;
+
+/** Frase do resultado: o que entrou, o que já existia e o que já saiu ativo. */
+function resumirImportacao(r: ResultadoImportacao): string {
+  const { importadas, jaExistiam } = r.resumo;
+  const ativados = r.ativacao.ativados.length;
+  if (importadas === 0 && ativados === 0) {
+    return `Nenhum indicador novo: os ${jaExistiam} da planilha já estavam cadastrados.`;
+  }
+  return [
+    `Planilha importada: ${plural(importadas, "indicador novo", "indicadores novos")}`,
+    jaExistiam > 0 ? `${jaExistiam} já existiam` : null,
+    `${plural(ativados, "ativado", "ativados")} automaticamente (definição pronta).`,
+  ]
+    .filter(Boolean)
+    .join(", ")
+    .concat(" Os demais ficam “Para revisar”.");
+}
+
+/** Mensagem da API (`{ error: { code, message } }`) para o aviso da tela. */
+function mensagemDaApi(err: unknown): string {
+  const resposta = (err as { response?: { status?: number; data?: { error?: { code?: string; message?: string } } } })
+    .response;
+  if (resposta?.status === undefined) return "não foi possível conectar ao servidor. Tente novamente em instantes.";
+  if (resposta.data?.error?.code === "ARQUIVO_GRANDE") return "o arquivo é grande demais (limite de 10 MB).";
+  if (resposta.status === 403) return "seu perfil não pode importar indicadores.";
+  return resposta.data?.error?.message ?? "erro inesperado. Tente novamente.";
+}
+
 function resumir(texto: string, max = 80) {
   return texto.length > max ? `${texto.slice(0, max - 1)}…` : texto;
 }
@@ -100,6 +147,18 @@ export function Indicadores() {
 
   const { data, isLoading, isError } = useIndicadores(filtros, pagina);
   const { data: pesquisas } = usePesquisas();
+  const importar = useImportarPlanilha();
+  const inputArquivo = useRef<HTMLInputElement>(null);
+  const [retornoImportacao, setRetornoImportacao] = useState<{ ok: ResultadoImportacao } | { erro: string } | null>(null);
+
+  async function enviarPlanilha(arquivo: File) {
+    setRetornoImportacao(null);
+    try {
+      setRetornoImportacao({ ok: await importar.mutateAsync(arquivo) });
+    } catch (err) {
+      setRetornoImportacao({ erro: mensagemDaApi(err) });
+    }
+  }
   // Lista vazia por filtro ≠ sistema sem nenhum indicador: os contadores ignoram o filtro de status.
   const semNenhumCadastro =
     data !== undefined && data.contadores.DEFINICAO_INCOMPLETA + data.contadores.ATIVO + data.contadores.INATIVO === 0;
@@ -114,11 +173,61 @@ export function Indicadores() {
             : "Cadastre, revise e ative os indicadores"}
         </PageSubtitle>
       </div>
-      <Button type="button" onClick={() => navigate("/indicadores/novo")}>
-        <Plus size={16} />
-        Novo indicador
-      </Button>
+      <BotoesTopo>
+        {/* O input fica escondido: o botão abre o seletor de arquivo. */}
+        <input
+          ref={inputArquivo}
+          type="file"
+          accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+          aria-label="arquivo da planilha de indicadores"
+          style={{ display: "none" }}
+          onChange={(e) => {
+            const arquivo = e.target.files?.[0];
+            e.target.value = ""; // permite reenviar o mesmo arquivo
+            if (arquivo) enviarPlanilha(arquivo);
+          }}
+        />
+        <Button
+          type="button"
+          $variant="ghost"
+          disabled={importar.isPending}
+          onClick={() => inputArquivo.current?.click()}
+          title="Importa a planilha &quot;Exportação Indicadores&quot; (.xlsx). Reenviar não sobrescreve o que já existe."
+        >
+          <Upload size={16} />
+          {importar.isPending ? "Importando…" : "Importar planilha"}
+        </Button>
+        <Button type="button" onClick={() => navigate("/indicadores/novo")}>
+          <Plus size={16} />
+          Novo indicador
+        </Button>
+      </BotoesTopo>
     </PageHeader>
+  );
+
+  const avisoImportacao = retornoImportacao && (
+    <Banner
+      $tone={"erro" in retornoImportacao ? "warn" : "info"}
+      role={"erro" in retornoImportacao ? "alert" : "status"}
+      style={{ marginBottom: 16 }}
+    >
+      {"erro" in retornoImportacao ? (
+        <>Não foi possível importar a planilha: {retornoImportacao.erro}</>
+      ) : (
+        <>
+          {resumirImportacao(retornoImportacao.ok)}
+          {retornoImportacao.ok.ativacao.recusados.length > 0 && (
+            <ListaRecusados>
+              {retornoImportacao.ok.ativacao.recusados.map((r) => (
+                <li key={r.codigo}>
+                  {r.codigo}: {r.motivo}
+                </li>
+              ))}
+            </ListaRecusados>
+          )}
+        </>
+      )}
+    </Banner>
   );
 
   const filtrosUi = (
@@ -176,6 +285,7 @@ export function Indicadores() {
   return (
     <div>
       {cabecalho}
+      {avisoImportacao}
       {filtrosUi}
 
       {isLoading ? (
@@ -193,7 +303,7 @@ export function Indicadores() {
             <>
               <SectionTitle>Nenhum indicador cadastrado</SectionTitle>
               <Muted>
-                Cadastre um indicador em "Novo indicador" ou importe a planilha de indicadores (ver README, Deploy).
+                Use "Importar planilha" para trazer os indicadores da planilha "Exportação Indicadores", ou cadastre um em "Novo indicador".
               </Muted>
             </>
           ) : (

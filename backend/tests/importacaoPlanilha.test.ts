@@ -1,9 +1,9 @@
 import { describe, it, expect, afterAll } from "vitest";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { rm } from "node:fs/promises";
+import { readFile, rm } from "node:fs/promises";
 import ExcelJS from "exceljs";
-import { COLUNAS, lerPlanilha } from "../src/helper/importacao/planilha.js";
+import { COLUNAS, ErroImportacao, lerPlanilha } from "../src/helper/importacao/planilha.js";
 
 /** Planilha gerada aqui, sem dado pessoal real; DtRegistro/Usuario têm valores fictícios. */
 const arquivos: string[] = [];
@@ -66,5 +66,25 @@ describe("lerPlanilha", () => {
     const semColuna = COLUNAS.filter((c) => c !== "Observações");
     const caminho = await gerarXlsx(semColuna, [{ ID: "165", Projeto: "Cartão CRIA (Criança)" }]);
     await expect(lerPlanilha(caminho)).rejects.toThrow("cabeçalho da planilha mudou");
+  });
+
+  it("lê a planilha enviada como bytes (upload pela tela), igual à lida do disco", async () => {
+    const caminho = await gerarXlsx(COLUNAS, [{ ID: "165", Projeto: "Cartão CRIA (Criança)", "Nome do Indicador": "VCRAS" }]);
+    const doDisco = await lerPlanilha(caminho);
+    const dosBytes = await lerPlanilha(await readFile(caminho));
+    expect(dosBytes).toEqual(doDisco);
+    expect(dosBytes).toHaveLength(1);
+  });
+
+  it("arquivo que não é .xlsx -> ErroImportacao com recado claro", async () => {
+    const erro = await lerPlanilha(Buffer.from("isto não é uma planilha")).catch((e) => e);
+    expect(erro).toBeInstanceOf(ErroImportacao);
+    expect(erro.message).toMatch(/não é uma planilha .xlsx/);
+  });
+
+  it("cabeçalho diferente também é ErroImportacao", async () => {
+    const semColuna = COLUNAS.filter((c) => c !== "Observações");
+    const caminho = await gerarXlsx(semColuna, []);
+    await expect(lerPlanilha(caminho)).rejects.toBeInstanceOf(ErroImportacao);
   });
 });

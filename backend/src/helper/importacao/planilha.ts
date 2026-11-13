@@ -55,12 +55,29 @@ function ehProjetoCartaoCria(valor: string): valor is ProjetoPlanilha {
   return (PROJETOS as readonly string[]).includes(valor);
 }
 
-/** Lê a primeira aba. Lança se o cabeçalho não for exatamente `COLUNAS`. */
-export async function lerPlanilha(caminho: string): Promise<LinhaPlanilha[]> {
+/**
+ * Problema no arquivo ou nos dados de que a importação depende — quem chama pela
+ * tela recebe a mensagem como está (422), diferente de falha interna (500).
+ */
+export class ErroImportacao extends Error {}
+
+/**
+ * Lê a primeira aba, do disco (script) ou dos bytes enviados (tela).
+ * Lança `ErroImportacao` se o arquivo não for .xlsx ou o cabeçalho não for exatamente `COLUNAS`.
+ */
+export async function lerPlanilha(fonte: string | Buffer): Promise<LinhaPlanilha[]> {
   const workbook = new ExcelJS.Workbook();
-  await workbook.xlsx.readFile(caminho);
+  if (typeof fonte === "string") {
+    await workbook.xlsx.readFile(fonte);
+  } else {
+    try {
+      await workbook.xlsx.load(fonte as unknown as ArrayBuffer);
+    } catch {
+      throw new ErroImportacao("o arquivo enviado não é uma planilha .xlsx válida");
+    }
+  }
   const sheet = workbook.worksheets[0];
-  if (!sheet) throw new Error("cabeçalho da planilha mudou: planilha sem abas");
+  if (!sheet) throw new ErroImportacao("cabeçalho da planilha mudou: planilha sem abas");
 
   // Só o cabeçalho das 17 colunas é conferido (o nome da coluna, não o conteúdo).
   const cabecalho = sheet.getRow(1);
@@ -70,7 +87,7 @@ export async function lerPlanilha(caminho: string): Promise<LinhaPlanilha[]> {
   );
   const extra = String(cabecalho.getCell(COLUNAS.length + 1).text ?? "").trim();
   if (extra) diferentes.push(`coluna ${COLUNAS.length + 1} a mais: "${extra}"`);
-  if (diferentes.length > 0) throw new Error(`cabeçalho da planilha mudou: ${diferentes.join("; ")}`);
+  if (diferentes.length > 0) throw new ErroImportacao(`cabeçalho da planilha mudou: ${diferentes.join("; ")}`);
 
   const linhas: LinhaPlanilha[] = [];
   for (let n = 2; n <= sheet.rowCount; n++) {
