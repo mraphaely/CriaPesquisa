@@ -2,6 +2,7 @@ import { describe, it, expect, afterAll } from "vitest";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { readFile, rm } from "node:fs/promises";
+import { deflateRawSync } from "node:zlib";
 import ExcelJS from "exceljs";
 import { COLUNAS, ErroImportacao, lerPlanilha } from "../src/helper/importacao/planilha.js";
 
@@ -90,20 +91,58 @@ describe("lerPlanilha", () => {
 });
 
 describe("lerPlanilha: proteção contra arquivo malicioso", () => {
-  /** Gera um .xlsx válido e troca o tamanho descompactado declarado da 1ª entrada do zip. */
-  async function xlsxComTamanhoDeclarado(bytes: number): Promise<Buffer> {
-    const workbook = new ExcelJS.Workbook();
-    workbook.addWorksheet("Indicadores").addRow([...COLUNAS]);
-    const buf = Buffer.from(await workbook.xlsx.writeBuffer());
-    const central = buf.indexOf(Buffer.from([0x50, 0x4b, 0x01, 0x02]));
-    buf.writeUInt32LE(bytes, central + 24);
-    return buf;
+  /**
+   * Zip de uma entrada só, montado à mão: `conteudo` comprimido com deflate, mas
+   * declarando `declarado` bytes descompactados — o arquivo "mente" o tamanho.
+   */
+  function zipMentiroso(conteudo: Buffer, declarado: number): Buffer {
+    const dados = deflateRawSync(conteudo);
+    const nome = Buffer.from("xl/worksheets/sheet1.xml");
+    const local = Buffer.alloc(30);
+    local.writeUInt32LE(0x04034b50, 0);
+    local.writeUInt16LE(20, 4);
+    local.writeUInt16LE(8, 8); // deflate
+    local.writeUInt32LE(dados.length, 18);
+    local.writeUInt32LE(declarado, 22);
+    local.writeUInt16LE(nome.length, 26);
+    const central = Buffer.alloc(46);
+    central.writeUInt32LE(0x02014b50, 0);
+    central.writeUInt16LE(20, 4);
+    central.writeUInt16LE(20, 6);
+    central.writeUInt16LE(8, 10);
+    central.writeUInt32LE(dados.length, 20);
+    central.writeUInt32LE(declarado, 24);
+    central.writeUInt16LE(nome.length, 28);
+    central.writeUInt32LE(0, 42); // offset do cabeçalho local
+    const inicioCentral = local.length + nome.length + dados.length;
+    const fim = Buffer.alloc(22);
+    fim.writeUInt32LE(0x06054b50, 0);
+    fim.writeUInt16LE(1, 8);
+    fim.writeUInt16LE(1, 10);
+    fim.writeUInt32LE(central.length + nome.length, 12);
+    fim.writeUInt32LE(inicioCentral, 16);
+    return Buffer.concat([local, nome, dados, central, nome, fim]);
   }
 
-  it("recusa zip que descompacta para tamanho absurdo (bomba de compressão)", async () => {
-    const erro = await lerPlanilha(await xlsxComTamanhoDeclarado(0xfffffff0)).catch((e) => e);
+  it("recusa bomba de compressão que declara tamanho pequeno (o tamanho real é contado)", async () => {
+    // 60 MB de zeros viram poucos KB comprimidos; o arquivo declara só 100 bytes.
+    const bomba = zipMentiroso(Buffer.alloc(60 * 1024 * 1024), 100);
+    expect(bomba.length).toBeLessThan(200 * 1024);
+
+    const erro = await lerPlanilha(bomba).catch((e) => e);
+
     expect(erro).toBeInstanceOf(ErroImportacao);
     expect(erro.message).toMatch(/grande demais/);
+  });
+
+  it("recusa zip cujo diretório não bate com a contagem declarada", async () => {
+    const zip = zipMentiroso(Buffer.from("<x/>"), 4);
+    zip.writeUInt16LE(5, zip.length - 22 + 10); // declara 5 entradas, só existe 1
+
+    const erro = await lerPlanilha(zip).catch((e) => e);
+
+    expect(erro).toBeInstanceOf(ErroImportacao);
+    expect(erro.message).toMatch(/não é uma planilha .xlsx válida/);
   });
 
   it("recusa planilha com linhas demais", async () => {

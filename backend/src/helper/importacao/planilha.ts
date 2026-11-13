@@ -1,3 +1,4 @@
+import { inflateRawSync } from "node:zlib";
 import ExcelJS from "exceljs";
 
 /**
@@ -71,14 +72,20 @@ const MAX_ENTRADAS_ZIP = 2_000;
 const MAX_LINHAS = 20_000;
 
 /**
- * Um .xlsx é um zip: antes de entregar ao ExcelJS (que descompacta tudo em
- * memória), soma os tamanhos descompactados declarados no diretório central e
- * recusa "bomba de compressão" — arquivo pequeno que se expande para gigabytes.
- * Zip64 (tamanho 0xFFFFFFFF) não faz sentido para essa planilha e é recusado.
+ * Um .xlsx é um zip, e o ExcelJS descompacta tudo em memória. Antes de entregar o
+ * arquivo a ele, cada parte é descompactada aqui com um teto de bytes: o tamanho
+ * que conta é o REAL, não o que o arquivo declara (que pode mentir). Barra a
+ * "bomba de compressão" — arquivo pequeno que se expande para gigabytes.
+ * O diretório central é percorrido pela assinatura e tem de bater com a contagem
+ * declarada; método de compressão diferente de deflate/armazenado é recusado.
  */
 function conferirZip(buf: Buffer): void {
   const FIM_DIRETORIO = 0x06054b50;
   const ENTRADA = 0x02014b50;
+  const LOCAL = 0x04034b50;
+  const invalido = () => new ErroImportacao("o arquivo enviado não é uma planilha .xlsx válida");
+  const grande = () => new ErroImportacao("o arquivo enviado é grande demais para uma planilha de indicadores");
+
   let fim = -1;
   for (let i = buf.length - 22; i >= Math.max(0, buf.length - 22 - 0xffff); i--) {
     if (buf.readUInt32LE(i) === FIM_DIRETORIO) {
@@ -86,23 +93,41 @@ function conferirZip(buf: Buffer): void {
       break;
     }
   }
-  if (fim < 0) throw new ErroImportacao("o arquivo enviado não é uma planilha .xlsx válida");
+  if (fim < 0) throw invalido();
 
-  const entradas = buf.readUInt16LE(fim + 10);
-  if (entradas > MAX_ENTRADAS_ZIP) throw new ErroImportacao("o arquivo enviado é grande demais para uma planilha de indicadores");
+  const declaradas = buf.readUInt16LE(fim + 10);
   let pos = buf.readUInt32LE(fim + 16);
-  let total = 0;
-  for (let n = 0; n < entradas; n++) {
-    if (pos + 46 > buf.length || buf.readUInt32LE(pos) !== ENTRADA) {
-      throw new ErroImportacao("o arquivo enviado não é uma planilha .xlsx válida");
+  let restante = MAX_DESCOMPACTADO;
+  let encontradas = 0;
+  while (pos + 46 <= fim && buf.readUInt32LE(pos) === ENTRADA) {
+    if (++encontradas > MAX_ENTRADAS_ZIP) throw grande();
+    const metodo = buf.readUInt16LE(pos + 10);
+    const comprimido = buf.readUInt32LE(pos + 20);
+    const local = buf.readUInt32LE(pos + 42);
+    if (local + 30 > buf.length || buf.readUInt32LE(local) !== LOCAL) throw invalido();
+    const inicio = local + 30 + buf.readUInt16LE(local + 26) + buf.readUInt16LE(local + 28);
+    if (inicio + comprimido > buf.length) throw invalido();
+    const dados = buf.subarray(inicio, inicio + comprimido);
+
+    let real: number;
+    if (metodo === 0) {
+      real = comprimido;
+    } else if (metodo === 8) {
+      try {
+        // Passar do teto aborta a descompactação no meio (RangeError), sem alocar o resto.
+        real = inflateRawSync(dados, { maxOutputLength: restante + 1 }).length;
+      } catch (erro) {
+        if (erro instanceof RangeError) throw grande();
+        throw invalido();
+      }
+    } else {
+      throw invalido();
     }
-    const tamanho = buf.readUInt32LE(pos + 24);
-    total += tamanho;
-    if (tamanho === 0xffffffff || total > MAX_DESCOMPACTADO) {
-      throw new ErroImportacao("o arquivo enviado é grande demais para uma planilha de indicadores");
-    }
+    restante -= real;
+    if (restante < 0) throw grande();
     pos += 46 + buf.readUInt16LE(pos + 28) + buf.readUInt16LE(pos + 30) + buf.readUInt16LE(pos + 32);
   }
+  if (encontradas === 0 || encontradas !== declaradas) throw invalido();
 }
 
 /**
