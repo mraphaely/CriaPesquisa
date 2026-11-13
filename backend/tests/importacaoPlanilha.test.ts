@@ -145,6 +145,26 @@ describe("lerPlanilha: proteção contra arquivo malicioso", () => {
     expect(erro.message).toMatch(/não é uma planilha .xlsx válida/);
   });
 
+  it("recusa zip com bytes inseridos antes do conteúdo (leitores veriam diretórios diferentes)", async () => {
+    const workbook = new ExcelJS.Workbook();
+    workbook.addWorksheet("Indicadores").addRow([...COLUNAS]);
+    const valido = Buffer.from(await workbook.xlsx.writeBuffer());
+    const deslocado = Buffer.concat([Buffer.alloc(128, 0x41), valido]);
+
+    const erro = await lerPlanilha(deslocado).catch((e) => e);
+
+    expect(erro).toBeInstanceOf(ErroImportacao);
+    expect(erro.message).toMatch(/não é uma planilha .xlsx válida/);
+  });
+
+  it("recusa zip com lixo depois do fim", async () => {
+    const workbook = new ExcelJS.Workbook();
+    workbook.addWorksheet("Indicadores").addRow([...COLUNAS]);
+    const comLixo = Buffer.concat([Buffer.from(await workbook.xlsx.writeBuffer()), Buffer.from("lixo")]);
+
+    await expect(lerPlanilha(comLixo)).rejects.toBeInstanceOf(ErroImportacao);
+  });
+
   it("recusa planilha com linhas demais", async () => {
     const workbook = new ExcelJS.Workbook();
     const sheet = workbook.addWorksheet("Indicadores");

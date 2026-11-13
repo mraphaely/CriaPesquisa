@@ -76,8 +76,12 @@ const MAX_LINHAS = 20_000;
  * arquivo a ele, cada parte é descompactada aqui com um teto de bytes: o tamanho
  * que conta é o REAL, não o que o arquivo declara (que pode mentir). Barra a
  * "bomba de compressão" — arquivo pequeno que se expande para gigabytes.
- * O diretório central é percorrido pela assinatura e tem de bater com a contagem
- * declarada; método de compressão diferente de deflate/armazenado é recusado.
+ * A estrutura tem de ser inequívoca, para que este exame e o ExcelJS (JSZip) leiam
+ * o MESMO diretório: o JSZip tolera bytes antes do zip e desloca todos os
+ * ponteiros, então um arquivo forjado poderia mostrar aqui um diretório inofensivo
+ * e lá outro. Por isso: diretório termina exatamente onde começa o registro final,
+ * o percurso pelas entradas termina exatamente ali, nada depois do comentário,
+ * volume único, sem zip64, e só deflate/armazenado.
  */
 function conferirZip(buf: Buffer): void {
   const FIM_DIRETORIO = 0x06054b50;
@@ -96,7 +100,26 @@ function conferirZip(buf: Buffer): void {
   if (fim < 0) throw invalido();
 
   const declaradas = buf.readUInt16LE(fim + 10);
-  let pos = buf.readUInt32LE(fim + 16);
+  const tamanhoDiretorio = buf.readUInt32LE(fim + 12);
+  const inicioDiretorio = buf.readUInt32LE(fim + 16);
+  const comentario = buf.readUInt16LE(fim + 20);
+  const volumeUnico = buf.readUInt16LE(fim + 4) === 0 && buf.readUInt16LE(fim + 6) === 0;
+  const zip64 =
+    declaradas === 0xffff ||
+    tamanhoDiretorio === 0xffffffff ||
+    inicioDiretorio === 0xffffffff ||
+    (fim >= 20 && buf.readUInt32LE(fim - 20) === 0x07064b50);
+  if (
+    !volumeUnico ||
+    zip64 ||
+    buf.readUInt16LE(fim + 8) !== declaradas ||
+    fim + 22 + comentario !== buf.length ||
+    inicioDiretorio + tamanhoDiretorio !== fim
+  ) {
+    throw invalido();
+  }
+
+  let pos = inicioDiretorio;
   let restante = MAX_DESCOMPACTADO;
   let encontradas = 0;
   while (pos + 46 <= fim && buf.readUInt32LE(pos) === ENTRADA) {
@@ -104,9 +127,10 @@ function conferirZip(buf: Buffer): void {
     const metodo = buf.readUInt16LE(pos + 10);
     const comprimido = buf.readUInt32LE(pos + 20);
     const local = buf.readUInt32LE(pos + 42);
-    if (local + 30 > buf.length || buf.readUInt32LE(local) !== LOCAL) throw invalido();
+    if (local + 30 > inicioDiretorio || buf.readUInt32LE(local) !== LOCAL) throw invalido();
     const inicio = local + 30 + buf.readUInt16LE(local + 26) + buf.readUInt16LE(local + 28);
-    if (inicio + comprimido > buf.length) throw invalido();
+    // Os dados de cada parte ficam antes do diretório, nunca dentro dele.
+    if (inicio + comprimido > inicioDiretorio) throw invalido();
     const dados = buf.subarray(inicio, inicio + comprimido);
 
     let real: number;
@@ -127,7 +151,7 @@ function conferirZip(buf: Buffer): void {
     if (restante < 0) throw grande();
     pos += 46 + buf.readUInt16LE(pos + 28) + buf.readUInt16LE(pos + 30) + buf.readUInt16LE(pos + 32);
   }
-  if (encontradas === 0 || encontradas !== declaradas) throw invalido();
+  if (encontradas === 0 || encontradas !== declaradas || pos !== fim) throw invalido();
 }
 
 /**
